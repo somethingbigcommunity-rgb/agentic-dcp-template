@@ -103,7 +103,7 @@ When an active gate applies, stop and ask; record approved architectural decisio
 | Command | Purpose |
 |---------|---------|
 | `/ase-setup` | P0 (new project) or P0-A (existing repository): mode, engine, branches, Project Memory |
-| `/ase-plan` | Create or update Waves, Features, User Stories and task files; update `NEXT_TASK.md` |
+| `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog; assign the first ready task in `NEXT_TASK.md` |
 | `/ase-task` | Run the next task with the Iteration Protocol |
 | `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence |
 
