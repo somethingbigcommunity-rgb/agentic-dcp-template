@@ -19,5 +19,6 @@ Project template for the **Agentic Software Engineering (ASE) harness**. It cont
 | `.agents/agents/`, `.agents/rules/` | Antigravity-specific agents and rules |
 | `.github/agents/`, `.github/instructions/` | Copilot-specific agents and instructions |
 | `.github/workflows/` | CI: fast checks on `main`, binding gate on PRs to `accepted` |
-| `project-memory/` | DCP (`dcp/`), ADRs (`adr/`) and state (`state/`) |
-| `templates/` | Templates for waves, features, user stories, tasks, requirements, ADRs |
+| `project-memory/` | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`) |
+| `scripts/` | Deterministic harness helpers, including the append-only task log script |
+| `templates/` | Task template and minimal correction prompt; later increments add planning templates |

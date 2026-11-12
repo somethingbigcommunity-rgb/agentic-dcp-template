@@ -42,7 +42,7 @@ project-memory/
 
 ## 3. Git model
 
-- `main` is the working branch; CI runs on every push.
+- `main` is the working branch. CI runs on every push when automation is configured; in a local-only project without CI automation, run the declared Fast CI command on `main` and record it as local gate evidence, not hosted CI.
 - Agents in VS Code work on short branches `task/<ID>` and merge into `main` after the preliminary check with green CI.
 - `accepted` is protected. It changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01).
 - One engine at a time writes to `main`.
@@ -68,7 +68,7 @@ IDs are flat, stable, sequential per type and never reused. Hierarchy lives in t
 - Implement only the assigned task. No unrelated changes, no future tasks.
 - **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. There are no exceptions, commands included: each run of `/ase-setup` or `/ase-plan` first opens its own task file (e.g. `T-0001: P0 setup`, `T-0012: plan W-02`), writes only within that task and logs it in `TASK_LOG.md` when closed. Creating a task file in `TODO` is how a task starts, so it is not a change outside a task. Read-only questions and analysis need no task.
 - Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED`.
-- Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides.
+- Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides. In a local-only project without CI automation, a passing declared Fast CI command on `main` is the local gate evidence required for `DONE`; never describe it as hosted CI.
 - On `DONE` or `BLOCKED`, append one line to `state/TASK_LOG.md`.
 - If the task conflicts with an ADR or the architecture, stop and report: do not decide alone.
 
