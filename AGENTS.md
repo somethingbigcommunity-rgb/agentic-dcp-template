@@ -66,7 +66,7 @@ IDs are flat, stable, sequential per type and never reused. Hierarchy lives in t
 
 - Execute **one task at a time** with the Iteration Protocol (`dcp/04-implementation/iteration-protocol.md`): input, pre-implementation, planning, implementation, verification, reporting, state update, stop.
 - Implement only the assigned task. No unrelated changes, no future tasks.
-- **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. Only the artifacts produced by `/ase-setup` and `/ase-plan` are exempt. Read-only questions and analysis need no task.
+- **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. There are no exceptions, commands included: each run of `/ase-setup` or `/ase-plan` first opens its own task file (e.g. `T-0001: P0 setup`, `T-0012: plan W-02`), writes only within that task and logs it in `TASK_LOG.md` when closed. Creating a task file in `TODO` is how a task starts, so it is not a change outside a task. Read-only questions and analysis need no task.
 - Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED`.
 - Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides.
 - On `DONE` or `BLOCKED`, append one line to `state/TASK_LOG.md`.
