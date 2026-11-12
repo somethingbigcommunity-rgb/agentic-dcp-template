@@ -66,6 +66,7 @@ IDs are flat, stable, sequential per type and never reused. Hierarchy lives in t
 
 - Execute **one task at a time** with the Iteration Protocol (`dcp/04-implementation/iteration-protocol.md`): input, pre-implementation, planning, implementation, verification, reporting, state update, stop.
 - Implement only the assigned task. No unrelated changes, no future tasks.
+- **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. Only the artifacts produced by `/ase-setup` and `/ase-plan` are exempt. Read-only questions and analysis need no task.
 - Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED`.
 - Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides.
 - On `DONE` or `BLOCKED`, append one line to `state/TASK_LOG.md`.
