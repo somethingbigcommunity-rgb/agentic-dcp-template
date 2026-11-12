@@ -20,5 +20,7 @@ Project template for the **Agentic Software Engineering (ASE) harness**. It cont
 | `.github/agents/`, `.github/instructions/` | Copilot-specific agents and instructions |
 | `.github/workflows/` | CI: fast checks on `main`, binding gate on PRs to `accepted` |
 | `project-memory/` | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`) |
-| `scripts/` | Deterministic harness helpers, including next-ID allocation and append-only task logging |
+| `scripts/` | Deterministic helpers for next-ID allocation, task logging and traceability; opt-in `accepted` branch protection |
 | `templates/` | MVP, requirement, Wave, Feature, User Story, task and ADR templates, plus the minimal correction prompt |
+
+`/ase-setup` configures the project's stack-specific `scripts/ci/fast.sh` and `scripts/ci/gate.sh`. The included GitHub Actions workflows call those commands; `scripts/protect-accepted.sh --apply` applies branch protection only when explicitly requested.

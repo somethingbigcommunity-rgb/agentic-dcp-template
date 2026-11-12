@@ -1,0 +1,29 @@
+name: gate
+
+on:
+  pull_request:
+    branches:
+      - accepted
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    name: gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main as the PR source
+        env:
+          PR_HEAD: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          TARGET_REPO: ${{ github.repository }}
+        run: test "$PR_HEAD" = main && test "$PR_HEAD_REPO" = "$TARGET_REPO"
+      - name: Check out PR merge result
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require project gate check
+        run: test -f scripts/ci/gate.sh
+      - name: Run project gate check
+        run: bash scripts/ci/gate.sh

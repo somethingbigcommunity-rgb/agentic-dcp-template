@@ -31,6 +31,8 @@ Run the focused checks for the task and the project's declared fast check when a
 
 Treat one complete verification run as one failure, even if several commands in it fail. Increment `correction_cycles` once for that failure. For cycles 1 and 2, diagnose the cause, make a bounded correction, and rerun the failed check plus relevant regressions. Use `templates/correction-prompt.md` when another correction prompt is needed. After the third failed verification, set the task to `BLOCKED`, record the impact analysis, append the terminal log entry, and stop without a fourth correction.
 
+After committing the task changes on `task/<ID>`, run `scripts/build-traceability.py` using the configured project mode. Review its warnings and errors. If `TRACEABILITY.md` changes, commit the generated file with the same task ID before merging the task branch into `main`. Unresolved references or strict-mode errors are verification failures.
+
 ## 6. Reporting
 
 Record in the task's execution report:
@@ -47,7 +49,7 @@ For `BLOCKED`, also record the root cause or that it is unconfirmed, affected ar
 
 Set descriptive task status and counter in the task file. After reviewable implementation and passing focused checks, use `IN_REVIEW`. If review or CI identifies a failure, return to `IN_PROGRESS` and count the failed verification as a correction cycle. A task is `DONE` only after the preliminary check, integration into `main`, and green CI on `main`. For a local-only project without CI automation, run the declared Fast CI command on `main` and record it explicitly as local gate evidence, not hosted CI. If the applicable gate is unavailable or fails, leave the task `IN_REVIEW`; never merge into `accepted`.
 
-For terminal status `DONE` or `BLOCKED`, append exactly one row to `project-memory/state/TASK_LOG.md` using `scripts/append-task-log.py`. Do not rewrite the log or edit generated `TRACEABILITY.md`. Update other descriptive state only when the task provides sufficient evidence.
+For terminal status `DONE` or `BLOCKED`, append exactly one row to `project-memory/state/TASK_LOG.md` using `scripts/append-task-log.py`. Do not rewrite the log or hand-edit generated `TRACEABILITY.md`. Update other descriptive state only when the task provides sufficient evidence.
 
 ## 8. Stop
 

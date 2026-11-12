@@ -1,0 +1,23 @@
+name: fast
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  fast:
+    name: fast
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require project fast check
+        run: test -f scripts/ci/fast.sh
+      - name: Run project fast check
+        run: bash scripts/ci/fast.sh
