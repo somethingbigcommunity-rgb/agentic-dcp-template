@@ -4,7 +4,7 @@ Global rules (prompt level L1) for every agent working in this repository, in an
 
 ## Project configuration
 
-Filled in by `/ase-setup` during P0. Changing it requires a PR to `accepted`; lowering the mode requires HAG-06.
+Filled in by `/ase-setup` during P0. In a new project with no local or remote `accepted`, the initial configuration is prepared in a task and integrated into `main` before the Human Owner authorizes the one-time creation of `accepted` from that verified commit. This creation is not a merge. Once `accepted` exists, changing its configuration requires a PR; never overwrite or move an existing `accepted`. Lowering the mode requires HAG-06.
 
 | Setting | Value |
 |---------|-------|
@@ -44,7 +44,7 @@ project-memory/
 
 - `main` is the working branch. CI runs on every push when automation is configured; in a local-only project without CI automation, run the declared Fast CI command on `main` and record it as local gate evidence, not hosted CI.
 - Agents in VS Code work on short branches `task/<ID>` and merge into `main` after the preliminary check with green CI.
-- `accepted` is protected. It changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01).
+- `accepted` is protected. After its explicitly authorized initial creation, it changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01).
 - One engine at a time writes to `main`.
 - One Work Package is open on `main` at a time; its PR is opened when the WP is complete.
 - Commit messages start with the task ID (`T-0117: ...`). PR titles start with the WP ID (`F-021: Upload PDF`).
@@ -102,7 +102,7 @@ When an active gate applies, stop and ask; record approved architectural decisio
 
 | Command | Purpose |
 |---------|---------|
-| `/ase-setup` | P0 (new project) or P0-A (existing repository): mode, engine, branches, Project Memory |
+| `/ase-setup` | Lite P0 for a new project: mode, engine, stack, branches, Project Memory, and the M0 checklist; P0-A is not yet supported |
 | `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog; assign the first ready task in `NEXT_TASK.md` |
 | `/ase-task` | Run the next task with the Iteration Protocol |
 | `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence |

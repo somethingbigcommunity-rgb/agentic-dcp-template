@@ -92,7 +92,7 @@ def parse_front_matter(path: Path) -> dict[str, str | tuple[str, ...]]:
         while index < len(lines) and re.match(r"^\s+-\s+", lines[index]):
             items.append(re.sub(r"^\s+-\s+", "", lines[index]).strip().strip("'\""))
             index += 1
-        fields[key] = tuple(items)
+        fields[key] = tuple(items) if items else ""
     return fields
 
 
@@ -212,20 +212,37 @@ def build_matrix(
             tests_by_id.setdefault(identifier, []).append(path.relative_to(root).as_posix())
 
     commit_subjects: dict[str, list[str]] = {}
+    all_commit_subjects: dict[str, list[str]] = {}
     if not no_git:
-        completed = subprocess.run(
-            ["git", "log", "--format=%s", "HEAD"],
-            cwd=root,
-            check=False,
-            capture_output=True,
-            text=True,
+        history_commands = (
+            (all_commit_subjects, ["git", "log", "--reverse", "--format=%s", "HEAD"]),
+            (
+                commit_subjects,
+                [
+                    "git",
+                    "log",
+                    "--format=%s",
+                    "HEAD",
+                    "--",
+                    ".",
+                    ":(exclude)project-memory/state/**",
+                    ":(exclude)project-memory/dcp/04-implementation/tasks/**",
+                ],
+            ),
         )
-        if completed.returncode:
-            raise RuntimeError(f"could not read git history: {completed.stderr.strip()}")
-        for subject in completed.stdout.splitlines():
-            match = TASK_COMMIT.match(subject)
-            if match:
-                commit_subjects.setdefault(match.group(1), []).append(subject)
+        for subjects_by_task, command in history_commands:
+            completed = subprocess.run(
+                command, cwd=root, check=False, capture_output=True, text=True
+            )
+            if completed.returncode:
+                raise RuntimeError(f"could not read git history: {completed.stderr.strip()}")
+            for subject in completed.stdout.splitlines():
+                match = TASK_COMMIT.match(subject)
+                if match:
+                    subjects_by_task.setdefault(match.group(1), []).append(subject)
+        for identifier, subjects in all_commit_subjects.items():
+            if identifier not in commit_subjects:
+                commit_subjects[identifier] = [subjects[0]]
 
     stories_by_requirement: dict[str, set[str]] = {}
     features_by_requirement: dict[str, set[str]] = {}

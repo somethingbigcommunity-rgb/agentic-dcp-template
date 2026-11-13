@@ -18,14 +18,40 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-repo=$(gh repo view --json nameWithOwner --jq .nameWithOwner)
-if [[ -z "$repo" ]]; then
-  echo "Error: could not determine the current GitHub repository." >&2
+if ! origin=$(git remote get-url origin); then
+  echo "Error: an origin remote is required." >&2
   exit 1
 fi
 
-gh api "repos/$repo/branches/accepted" --jq .name >/dev/null
+repo=$(gh repo view "$origin" --json nameWithOwner --jq .nameWithOwner)
+repo_url=$(gh repo view "$origin" --json url --jq .url)
+host="${repo_url#https://}"
+host="${host%%/*}"
+if [[ ! "$repo" =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] ||
+   [[ ! "$host" =~ ^[A-Za-z0-9.:-]+$ ]] ||
+   [[ "$repo_url" != "https://$host/$repo" ]]; then
+  echo "Error: could not determine the GitHub repository and host for origin." >&2
+  exit 1
+fi
+
+if ! protected=$(gh api --hostname "$host" "repos/$repo/branches/accepted" --jq .protected); then
+  echo "Error: could not inspect accepted; no protection was changed." >&2
+  exit 1
+fi
+case "$protected" in
+  false) ;;
+  true)
+    echo "Error: accepted is already protected; inspect existing rules instead of replacing them." >&2
+    exit 1
+    ;;
+  *)
+    echo "Error: accepted protection status is unknown; no protection was changed." >&2
+    exit 1
+    ;;
+esac
+
 gh api \
+  --hostname "$host" \
   --method PUT \
   "repos/$repo/branches/accepted/protection" \
   --input - <<'JSON'

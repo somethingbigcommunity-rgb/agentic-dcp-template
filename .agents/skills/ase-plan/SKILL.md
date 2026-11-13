@@ -10,7 +10,7 @@ Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Me
 ## 1. Check project and input
 
 1. Read `AGENTS.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
-2. Proceed only when `/ase-setup` has completed and the project mode is Lite. If setup is incomplete or the mode is not Lite, stop and explain the prerequisite.
+2. Proceed only when `/ase-setup` has completed, `PROJECT_STATE.md` records `M0 | PASS`, the M0 checklist has the required evidence, and the project mode is Lite. If setup is incomplete, evidence is missing, or the mode is not Lite, stop and explain the prerequisite.
 3. Use the user's supplied idea or planning change. If none is provided, ask for it; do not invent product scope.
 4. Load only relevant role cards from `.agents/skills/ase-roles/SKILL.md`. Consult the Product & Project Manager and Solution Architect cards; involve other roles only when the scope or risk requires them.
 

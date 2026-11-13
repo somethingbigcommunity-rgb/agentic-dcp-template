@@ -1,0 +1,23 @@
+name: m0-smoke
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gate-smoke:
+    name: gate-smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require main
+        run: test "$GITHUB_REF" = refs/heads/main
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Require project gate check
+        run: test -f scripts/ci/gate.sh
+      - name: Run project gate check
+        run: bash scripts/ci/gate.sh
