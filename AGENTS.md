@@ -12,6 +12,7 @@ Filled in by `/ase-setup` during P0. In a new project with no local or remote `a
 | Engine | `vscode` <!-- vscode | ai-studio --> |
 | Working branch | `main` |
 | Accepted branch | `accepted` |
+| Review policy | `reviewer` <!-- reviewer | solo-owner (Lite only) --> |
 | Stack | _to be defined in P0_ |
 | Fast CI command | `scripts/ci/fast.sh` |
 | Gate CI command | `scripts/ci/gate.sh` |
@@ -44,7 +45,7 @@ project-memory/
 
 - `main` is the working branch. CI runs on every push when automation is configured; in a local-only project without CI automation, run the declared Fast CI command on `main` and record it as local gate evidence, not hosted CI.
 - Agents in VS Code work on short branches `task/<ID>` and merge into `main` after the preliminary check with green CI.
-- `accepted` is protected. After its explicitly authorized initial creation, it changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01).
+- `accepted` is protected. After its explicitly authorized initial creation, it changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01). With `Review policy` `reviewer`, the PR also needs an approval from an eligible human other than its author; with `solo-owner` (Lite only, for single-person projects) protection requires no approving review, and the Human Owner's own merge after reading the PR is the HAG-01 approval.
 - One engine at a time writes to `main`.
 - One Work Package is open on `main` at a time; its PR is opened when the WP is complete.
 - Commit messages start with the task ID (`T-0117: ...`). PR titles start with the WP ID (`F-021: Upload PDF`).

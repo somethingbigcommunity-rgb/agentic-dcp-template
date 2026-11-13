@@ -1,16 +1,40 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+usage() {
+  printf 'Usage: %s [--apply [--solo-owner]]\n' "$0" >&2
+}
+
 if [[ $# -eq 0 ]]; then
   printf '%s\n' \
     'No remote settings changed. To protect accepted, run:' \
-    '  bash scripts/protect-accepted.sh --apply'
+    '  bash scripts/protect-accepted.sh --apply                # Review policy: reviewer' \
+    '  bash scripts/protect-accepted.sh --apply --solo-owner   # Review policy: solo-owner (Lite only)'
   exit 0
 fi
 
-if [[ $# -ne 1 || "$1" != "--apply" ]]; then
-  printf 'Usage: %s [--apply]\n' "$0" >&2
+reviews=1
+if [[ "$1" != "--apply" || $# -gt 2 ]]; then
+  usage
   exit 2
+fi
+if [[ $# -eq 2 ]]; then
+  if [[ "$2" != "--solo-owner" ]]; then
+    usage
+    exit 2
+  fi
+  reviews=0
+fi
+
+if [[ $reviews -eq 0 ]]; then
+  root=$(git rev-parse --show-toplevel)
+  setting() {
+    sed -n "s/^| $1 | \`\([^\`]*\)\`.*|\$/\1/p" "$root/AGENTS.md" 2>/dev/null | head -n 1
+  }
+  if [[ "$(setting 'Review policy')" != "solo-owner" || "$(setting 'Working mode')" != "Lite" ]]; then
+    echo "Error: --solo-owner requires 'Review policy' solo-owner and 'Working mode' Lite in AGENTS.md." >&2
+    exit 2
+  fi
 fi
 
 if ! command -v gh >/dev/null 2>&1; then
@@ -54,7 +78,7 @@ gh api \
   --hostname "$host" \
   --method PUT \
   "repos/$repo/branches/accepted/protection" \
-  --input - <<'JSON'
+  --input - <<JSON
 {
   "required_status_checks": {
     "strict": true,
@@ -63,7 +87,7 @@ gh api \
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,
-    "required_approving_review_count": 1
+    "required_approving_review_count": $reviews
   },
   "restrictions": null,
   "allow_force_pushes": false,
@@ -71,4 +95,8 @@ gh api \
 }
 JSON
 
-printf 'Branch protection applied to %s: required check "gate / gate" and one human approval.\n' "$repo"
+if [[ $reviews -eq 1 ]]; then
+  printf 'Branch protection applied to %s: required PR, check "gate / gate", and one approval by a reviewer other than the author.\n' "$repo"
+else
+  printf 'Branch protection applied to %s: required PR and check "gate / gate"; solo-owner policy, the Human Owner merge is the HAG-01 approval.\n' "$repo"
+fi

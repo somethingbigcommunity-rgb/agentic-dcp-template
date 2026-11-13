@@ -36,6 +36,11 @@ REQUIRED_FILES = (
 )
 
 
+# Minimum required approvals per review policy. Under solo-owner a PR is still
+# required, and the Human Owner's own merge is the HAG-01 approval.
+REVIEW_POLICIES = {"reviewer": 1, "solo-owner": 0}
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     phase = parser.add_mutually_exclusive_group(required=True)
@@ -129,6 +134,9 @@ def check_local(root: Path) -> None:
     for key, value in expected.items():
         if settings.get(key) != value:
             raise CheckError(f"{key} must be {value!r} for Lite P0")
+    policy = settings.get("Review policy")
+    if policy not in REVIEW_POLICIES:
+        raise CheckError("Review policy must be 'reviewer' or 'solo-owner'")
     stack = settings.get("Stack", "").strip()
     if not stack or "to be defined" in stack.lower() or stack.startswith("<"):
         raise CheckError("Stack must contain an approved project-specific value")
@@ -148,7 +156,7 @@ def check_local(root: Path) -> None:
     print("Local checks passed. Local evidence alone does not complete M0.")
 
 
-def check_protection(value: object) -> None:
+def check_protection(value: object, policy: str) -> None:
     protection = require_object(value, "accepted protection")
     checks = require_object(protection.get("required_status_checks"), "required status checks")
     contexts = checks.get("contexts")
@@ -165,8 +173,12 @@ def check_protection(value: object) -> None:
 
     reviews = require_object(protection.get("required_pull_request_reviews"), "required reviews")
     count = reviews.get("required_approving_review_count")
-    if not isinstance(count, int) or isinstance(count, bool) or count < 1:
-        raise CheckError("accepted must require at least one approving review")
+    minimum = REVIEW_POLICIES[policy]
+    if not isinstance(count, int) or isinstance(count, bool) or count < minimum:
+        raise CheckError(
+            f"accepted must require a pull request with at least {minimum} approving review(s) "
+            f"for review policy {policy!r}"
+        )
     bypass = reviews.get("bypass_pull_request_allowances")
     if bypass is not None:
         allowances = require_object(bypass, "review bypass allowances")
@@ -309,7 +321,7 @@ def check_hosted(root: Path, tested_commit: str, task: str) -> None:
         root,
         "accepted protection",
     )
-    check_protection(protection)
+    check_protection(protection, configuration(root)["Review policy"])
 
     fast_url = successful_run(root, repo, "fast.yml", head, "push")
     smoke_url = successful_run(root, repo, "m0-smoke.yml", tested_commit, "workflow_dispatch")

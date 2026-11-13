@@ -14,7 +14,7 @@ The v0.1 setup supports new projects in Lite mode with the `vscode` engine. Othe
 
 `/ase-setup` asks for the stack and real Fast and Gate commands; it does not install dependencies or invent passing checks. It can prepare a project locally, but M0 also requires GitHub connectivity, protected `accepted`, and successful hosted checks. Creating the initial `accepted` branch, changing GitHub settings, pushing, and starting the hosted smoke workflow require explicit permission. An existing `accepted` branch or protection is never overwritten automatically.
 
-GitHub requires the approving reviewer to be a person with suitable access other than the PR author. Arrange that reviewer for a personal project too; otherwise the PR cannot satisfy the required review. Only the Human Owner decides the merge into `accepted` (HAG-01).
+GitHub requires the approving reviewer to be a person with suitable access other than the PR author. `/ase-setup` therefore asks for a `Review policy`: `reviewer` (default) requires that reviewer; `solo-owner`, available only in Lite for single-person projects, protects `accepted` with a required PR and Gate but no approving review, and the Human Owner's own merge is the approval. In both cases only the Human Owner decides the merge into `accepted` (HAG-01), and agents never merge it, even though in a personal project they may run with credentials that technically could.
 
 ## Layout
 
