@@ -24,3 +24,5 @@ Load these roles when the task risk or domain requires them:
 In Lite, the Implementation Engineer is the executing agent; use the frontend or backend card that matches the change. Do not activate every role for every task.
 
 Load QA Engineer for medium- or high-risk behavior changes. Load Security Reviewer for high-risk work and whenever identity, authorization, sensitive data, dependencies, or trust boundaries are involved, including when a task was misclassified as low risk.
+
+If a required specialist reviewer is unavailable, record the review as `UNAVAILABLE`, not `PASS`. The implementing agent may perform and document the relevant checklist, but must not describe it as an independent review. State the remaining limitations and leave the task awaiting the Human Owner's decision when the required review is an acceptance gate.

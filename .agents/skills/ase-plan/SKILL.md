@@ -18,7 +18,7 @@ Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Me
 
 1. If the user supplies a planning-task ID, resume that task only if its status is `IN_REVIEW` and it has pending approval or post-approval work; switch to its `task/<ID>` branch without discarding changes. Otherwise, when exactly one planning task is `IN_REVIEW`, resume it and its branch. If there are multiple pending planning tasks and no ID was supplied, ask which to resume. Do not create a duplicate task for an open plan.
 2. If there is no planning task to resume, allocate an ID with `python3 scripts/next-id.py --type task`, then create or switch to `task/<ID>` from `main` without discarding existing work.
-3. Create `project-memory/dcp/04-implementation/tasks/<ID>-plan-<slug>.md` from `templates/task-template.md`. Set `parent` to the current Wave when re-planning one, or empty for a new plan; use the configured engine, `risk: medium`, `status: IN_PROGRESS`, and `correction_cycles: 0`.
+3. Create `project-memory/dcp/04-implementation/tasks/<ID>-plan-<slug>.md` from `templates/task-template.md`. Leave `parent` empty: a planning task is not an implementation task in the backlog, and the traceability matrix only links implementation tasks under a User Story or Work Package. Record the Wave or Feature being planned in the task's notes and report instead. Use the configured engine, `risk: medium`, `status: IN_PROGRESS`, and `correction_cycles: 0`.
 4. Give this planning task criteria covering the approved plan, stable IDs, updated state files, and validation of all generated references. Record the request and a concise proposal in its execution report.
 5. Do not set `NEXT_TASK.md` to the planning task; it is a separate, bounded planning operation.
 

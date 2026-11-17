@@ -63,6 +63,8 @@ Project → Wave → Feature → User Story → Task. Every Work Package (usuall
 
 IDs are flat, stable, sequential per type and never reused. Hierarchy lives in the `parent` front matter field, external keys in `external`. Test names cite the `US-NNN` or `REQ-NNN` they verify.
 
+For persistent application records, do not reuse identifiers while stale references could still target a replacement record. Prefer UUIDs or a database-supported non-reusing key (for SQLite integer keys, `INTEGER PRIMARY KEY AUTOINCREMENT`); test that a stale delete/update cannot affect a later record after deletion or clear-all.
+
 ## 5. Task execution
 
 - Execute **one task at a time** with the Iteration Protocol (`dcp/04-implementation/iteration-protocol.md`): input, pre-implementation, planning, implementation, verification, reporting, state update, stop.
@@ -81,7 +83,7 @@ Every task has `risk: low | medium | high`.
 |-------|---------------|----------------|
 | low | UI, copy, local refactoring covered by tests | Standard PR checks |
 | medium | New business logic, new APIs, shared components | Integration tests, review by the relevant specialist |
-| high | Auth, data model, migrations, dependencies, cost or latency | Relevant security/performance tests, Security Reviewer or Solution Architect, matching HAGs |
+| high | Auth, data model, migrations, dependencies, cost or latency | Relevant security/performance tests, Security Reviewer or Solution Architect, matching HAGs. For record deletion, include stale-reference tests where applicable. |
 
 ## 7. Human Approval Gates
 

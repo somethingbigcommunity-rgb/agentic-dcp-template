@@ -32,6 +32,8 @@ When verification fails:
 
 Do not reset the cycle count during a task run. A later human-authorized restart must be explicit in the task history.
 
+If a required specialist review cannot be obtained, record it as `UNAVAILABLE`, not as a successful review. A documented checklist by the implementing agent is useful evidence but is not independent review; record the remaining limitations and keep the task `IN_REVIEW` until the Human Owner decides whether the project's acceptance criteria allow closure. Do not waive an active gate without its required approval.
+
 ## 4. Review and close
 
 After all criteria pass:
