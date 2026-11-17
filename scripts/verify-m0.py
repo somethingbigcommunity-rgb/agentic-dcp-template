@@ -196,6 +196,34 @@ def check_protection(value: object, policy: str) -> None:
             raise CheckError(f"accepted protection requires {key}.enabled = {expected}")
 
 
+def check_procedural_hag01(root: Path) -> None:
+    checklist = (root / "project-memory/state/M0_CHECKLIST.md").read_text(
+        encoding="utf-8"
+    )
+    if not re.search(
+        r"(?m)^HAG-06 procedural accepted-gate fallback: APPROVED — \d{4}-\d{2}-\d{2}$",
+        checklist,
+    ):
+        raise CheckError(
+            "accepted is unprotected; record explicit HAG-06 procedural fallback approval "
+            "in M0_CHECKLIST.md"
+        )
+    if not re.search(
+        r"(?m)^Reason and accepted residual risk: (?!PENDING$).+$", checklist
+    ):
+        raise CheckError(
+            "record why branch protection is unavailable and the accepted residual risk "
+            "in M0_CHECKLIST.md"
+        )
+    audit = root / "scripts/verify-accepted.sh"
+    if not audit.is_file() or audit.is_symlink() or not os.access(audit, os.X_OK):
+        raise CheckError("procedural accepted gate requires executable scripts/verify-accepted.sh")
+    print(
+        "accepted is unprotected; HAG-06 procedural fallback is recorded. "
+        "Direct pushes and early merges are not technically blocked."
+    )
+
+
 def successful_run(
     root: Path, repo: str, workflow: str, commit: str, event: str
 ) -> str:
@@ -316,12 +344,31 @@ def check_hosted(root: Path, tested_commit: str, task: str) -> None:
         raise CheckError("the GitHub default branch must be main")
     host = parsed.netloc
     repo = f"{host}/{name}"
-    protection = json_command(
-        ["gh", "api", "--hostname", host, f"repos/{name}/branches/accepted/protection"],
-        root,
-        "accepted protection",
+    accepted_branch = require_object(
+        json_command(
+            ["gh", "api", "--hostname", host, f"repos/{name}/branches/accepted"],
+            root,
+            "accepted branch",
+        ),
+        "accepted branch",
     )
-    check_protection(protection, configuration(root)["Review policy"])
+    if accepted_branch.get("protected") is True:
+        protection = json_command(
+            [
+                "gh",
+                "api",
+                "--hostname",
+                host,
+                f"repos/{name}/branches/accepted/protection",
+            ],
+            root,
+            "accepted protection",
+        )
+        check_protection(protection, configuration(root)["Review policy"])
+    elif accepted_branch.get("protected") is False:
+        check_procedural_hag01(root)
+    else:
+        raise CheckError("GitHub did not return an explicit accepted protection status")
 
     fast_url = successful_run(root, repo, "fast.yml", head, "push")
     smoke_url = successful_run(root, repo, "m0-smoke.yml", tested_commit, "workflow_dispatch")

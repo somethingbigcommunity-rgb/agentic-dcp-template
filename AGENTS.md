@@ -45,7 +45,8 @@ project-memory/
 
 - `main` is the working branch. CI runs on every push when automation is configured; in a local-only project without CI automation, run the declared Fast CI command on `main` and record it as local gate evidence, not hosted CI.
 - Agents in VS Code work on short branches `task/<ID>` and merge into `main` after the preliminary check with green CI.
-- `accepted` is protected. After its explicitly authorized initial creation, it changes only through a PR `main → accepted`, whose CI is the binding gate. **No agent ever merges into `accepted`** (HAG-01). With `Review policy` `reviewer`, the PR also needs an approval from an eligible human other than its author; with `solo-owner` (Lite only, for single-person projects) protection requires no approving review, and the Human Owner's own merge after reading the PR is the HAG-01 approval.
+- `accepted` must be protected where GitHub supports it: require a PR from `main`, the `gate / gate` check, and the configured review policy. **No agent ever merges into `accepted`** (HAG-01). With `Review policy` `reviewer`, the PR needs an approval from an eligible human other than its author; with `solo-owner` (Lite only, for single-person projects), no approving review is required, and the Human Owner's own merge after reading the PR is the HAG-01 approval.
+- If repository plan or permissions make branch protection unavailable, the Human Owner may explicitly approve a procedural fallback under HAG-06, recorded in `project-memory/state/M0_CHECKLIST.md`. The procedure still requires a PR from `main`, a successful `gate / gate` run before the Human Owner merges, and a post-merge `bash scripts/verify-accepted.sh <PR-number>` audit. No agent merges into `accepted`. This fallback cannot technically prevent direct pushes or an early merge; record and accept that residual risk explicitly. If a distinct eligible reviewer is required by the configured `Review policy`, the fallback does not waive that requirement.
 - One engine at a time writes to `main`.
 - One Work Package is open on `main` at a time; its PR is opened when the WP is complete.
 - Commit messages start with the task ID (`T-0117: ...`). PR titles start with the WP ID (`F-021: Upload PDF`).
@@ -91,7 +92,7 @@ Decisions reserved to the human owner. Active gates depend on the working mode.
 
 | ID | Decision | Lite | Standard | Enterprise |
 |----|----------|:----:|:--------:|:----------:|
-| HAG-01 | Merge of a PR into `accepted` | ✓ | ✓ | ✓ |
+| HAG-01 | Human merge of a `main → accepted` PR after Gate/review checks; procedural fallback requires HAG-06 | ✓ | ✓ | ✓ |
 | HAG-02 | ADRs, architectural changes, "as-is" baseline (M0-A) | ✓ | ✓ | ✓ |
 | HAG-03 | Auth, authorization, data model, destructive migrations | ✓ | ✓ | ✓ |
 | HAG-04 | Exceeding cost, latency or usage thresholds set in P0 | – | ✓ | ✓ |
