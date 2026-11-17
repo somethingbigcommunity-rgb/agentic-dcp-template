@@ -1,8 +1,8 @@
 # Agentic DCP Template
 
-Project template for the **Agentic Software Engineering (ASE) harness**. It contains the Development Context Package (DCP), the Project Memory skeleton and the agentic system (skills, role cards, agents, rules, CI workflows) shared by GitHub Copilot and Antigravity.
+Project template for the **Agentic Software Engineering (ASE) harness**. It contains the Development Context Package (DCP), the Project Memory skeleton and the agentic system (skills, role cards, rules, CI workflows).
 
-> Status: v0.1 under development. Skills are added increment by increment; see the CHANGELOG of the source repository.
+> Version: **v0.1.0**, an initial Lite release for new projects using GitHub Copilot in VS Code. See [release notes and validation limits](RELEASE-NOTES.md). Antigravity validation is deferred to v0.2; compatibility is not certified.
 
 ## Start a new project
 
@@ -11,6 +11,8 @@ Project template for the **Agentic Software Engineering (ASE) harness**. It cont
 3. Once the M0 checklist is complete, run `/ase-plan`, then `/ase-task` for each task and `/ase-review` for each Work Package.
 
 The v0.1 setup supports new projects in Lite mode with the `vscode` engine. Other modes, AI Studio, and adoption of existing repositories are not implemented. Graphify is optional.
+
+For an existing work repository, do not copy this skeleton over its current structure or branch policy: the adoption workflow is planned for v0.2. For a new work project, first obtain your organization's approval for the tools, repository visibility, and handling of its code and data.
 
 `/ase-setup` asks for the stack and real Fast and Gate commands; it does not install dependencies or invent passing checks. It can prepare a project locally, but M0 also requires GitHub connectivity, an existing `accepted` branch, and successful hosted checks. Branch protection is required where available. If GitHub plan or permissions prevent it, only an explicit HAG-06 approval of the procedural HAG-01 fallback recorded in the M0 checklist can substitute; this accepts that direct pushes and early merges cannot be technically blocked. Creating the initial `accepted` branch, changing GitHub settings, pushing, and starting the hosted smoke workflow require explicit permission. An existing `accepted` branch or protection is never overwritten automatically.
 
@@ -32,3 +34,5 @@ GitHub requires the approving reviewer to be a person with suitable access other
 `/ase-setup` configures the project's stack-specific `scripts/ci/fast.sh` and `scripts/ci/gate.sh`. The included GitHub Actions workflows call those commands. The M0 smoke test runs the Gate command on Actions but is not a PR gate. `scripts/protect-accepted.sh --apply` is opt-in and refuses to replace detected existing protection.
 
 `python3 scripts/verify-m0.py --local` runs the approved local checks and reports local readiness only. `/ase-setup` uses its `--hosted` mode to verify GitHub branches, protection (or the explicitly approved procedural fallback), and workflow evidence; it does not change remote settings. Under the fallback, `bash scripts/verify-accepted.sh <PR-number>` checks that the current remote `accepted` tip is the merge commit of that merged `main → accepted` PR.
+
+The template intentionally has no project-specific `scripts/ci/fast.sh` or `scripts/ci/gate.sh`: `/ase-setup` creates them after stack and command approval. A workflow run on the unconfigured template fails at that prerequisite; it is not evidence that project M0 or the Gate passed.
