@@ -1,15 +1,16 @@
 # AGENTS.md
 
-Global rules (prompt level L1) for every agent working in this repository, in any harness (GitHub Copilot, Antigravity). This repository follows the **Agentic Software Engineering (ASE) harness v0.1**.
+Global rules (prompt level L1) for every agent working in this repository, in any harness (GitHub Copilot, Antigravity). This repository follows the **Agentic Software Engineering (ASE) harness v0.2**.
 
 ## Project configuration
 
-Filled in by `/ase-setup` during P0. In a new project with no local or remote `accepted`, the initial configuration is prepared in a task and integrated into `main` before the Human Owner authorizes the one-time creation of `accepted` from that verified commit. This creation is not a merge. Once `accepted` exists, changing its configuration requires a PR; never overwrite or move an existing `accepted`. Lowering the mode requires HAG-06.
+Filled in by `/ase-setup` during P0 (new project, `remote` Git mode) or by `/ase-adopt` (existing or local repository, `local` Git mode). In a new project with no local or remote `accepted`, the initial configuration is prepared in a task and integrated into `main` before the Human Owner authorizes the one-time creation of `accepted` from that verified commit. This creation is not a merge. Once `accepted` exists, changing its configuration requires a PR; never overwrite or move an existing `accepted`. Lowering the mode requires HAG-06.
 
 | Setting | Value |
 |---------|-------|
 | Working mode | `Lite` <!-- Lite | Standard | Enterprise --> |
 | Engine | `vscode` <!-- vscode | ai-studio --> |
+| Git mode | `remote` <!-- remote | local --> |
 | Working branch | `main` |
 | Accepted branch | `accepted` |
 | Review policy | `reviewer` <!-- reviewer | solo-owner (Lite only) --> |
@@ -50,6 +51,17 @@ project-memory/
 - One engine at a time writes to `main`.
 - One Work Package is open on `main` at a time; its PR is opened when the WP is complete.
 - Commit messages start with the task ID (`T-0117: ...`). PR titles start with the WP ID (`F-021: Upload PDF`).
+
+### Local Git mode
+
+With `Git mode` `local` (set by `/ase-adopt`), ASE runs on the Human Owner's machine inside a repository whose Git process belongs to someone else (team, company). The ASE files are usually excluded from Git through `.git/info/exclude`.
+
+- `Working branch` is the branch the Human Owner works on; `Accepted branch` is `none`. The team's own branch, PR, review and CI rules apply unchanged.
+- Agents **never commit, push, rebase, switch or create branches, open PRs, or change remote settings**. They leave changes in the working tree; the Human Owner reviews the diff and commits. Read-only Git commands are allowed.
+- `Fast CI command` and `Gate CI command` are the repository's existing commands (for example `npm test`, `mvn -q verify`), recorded by `/ase-adopt`. If a command is `none`, say so; never claim a check passed.
+- A task becomes `DONE` when its criteria have evidence, the declared Fast command passes locally, and the Human Owner accepts the diff (HAG-01 in local mode). Until then it stays `IN_REVIEW`.
+- Never put ASE IDs, Project Memory content or internal notes into code, commit messages or PRs unless the Human Owner asks.
+- Sections about `main`, `accepted`, task branches and hosted workflows apply only to `remote` mode.
 
 ## 4. Work hierarchy and IDs
 
@@ -92,7 +104,7 @@ Decisions reserved to the human owner. Active gates depend on the working mode.
 
 | ID | Decision | Lite | Standard | Enterprise |
 |----|----------|:----:|:--------:|:----------:|
-| HAG-01 | Human merge of a `main → accepted` PR after Gate/review checks; procedural fallback requires HAG-06 | ✓ | ✓ | ✓ |
+| HAG-01 | Human merge of a `main → accepted` PR after Gate/review checks (`remote`), or human acceptance and commit of the task diff (`local`); procedural fallback requires HAG-06 | ✓ | ✓ | ✓ |
 | HAG-02 | ADRs, architectural changes, "as-is" baseline (M0-A) | ✓ | ✓ | ✓ |
 | HAG-03 | Auth, authorization, data model, destructive migrations | ✓ | ✓ | ✓ |
 | HAG-04 | Exceeding cost, latency or usage thresholds set in P0 | – | ✓ | ✓ |
@@ -106,10 +118,13 @@ When an active gate applies, stop and ask; record approved architectural decisio
 
 | Command | Purpose |
 |---------|---------|
-| `/ase-setup` | Lite P0 for a new project: mode, engine, stack, branches, Project Memory, and the M0 checklist; P0-A is not yet supported |
+| `/ase-setup` | Lite P0 for a new GitHub project (`remote` Git mode): mode, engine, stack, branches, Project Memory, and the M0 checklist |
+| `/ase-adopt` | P0-A Lite for an existing or local-only repository (`local` Git mode): read the code, rebuild the minimal DCP, record the as-is baseline (M0-A, HAG-02) |
 | `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog; assign the first ready task in `NEXT_TASK.md` |
 | `/ase-task` | Run the next task with the Iteration Protocol |
-| `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence |
+| `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence (`remote`), or a review report and PR description draft for the human (`local`) |
+
+The full agent roster (DEC-05) is installed natively for both harnesses: `.github/agents/*.agent.md` for GitHub Copilot and `.agents/agents/*.md` for Antigravity. Start from `ASE Lead`; it delegates to specialists only when the task needs them. Skills live in `.agents/skills/` (read natively by both); file-scoped rules are in `.github/instructions/` (Copilot) and `.agents/rules/` (Antigravity). Agents follow this file; they do not add authority.
 
 If the skill for a command is not installed, say so instead of improvising its behavior.
 

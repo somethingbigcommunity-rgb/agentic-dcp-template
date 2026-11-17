@@ -5,6 +5,8 @@ description: Review a completed ASE Work Package, verify local evidence and trac
 
 # `/ase-review`
 
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+
 Review one completed Work Package and open a Pull Request from `main` to `accepted`. Follow `AGENTS.md`, DEC-10, DEC-11, and the project's configured CI commands. This skill never merges into `accepted`.
 
 ## 1. Validate the review target
@@ -31,3 +33,13 @@ Review one completed Work Package and open a Pull Request from `main` to `accept
 3. Run `gh pr create --base accepted --head main --title "<WP-ID>: <Feature title>" --body-file <review-body>`. If `gh` fails, surface its output and do not claim a PR exists.
 4. For an unprotected branch under the approved procedural fallback, wait for the PR checks and verify `gate / gate` is successful before handing off for merge. If the Gate fails or is absent, do not recommend merging.
 5. Report the PR URL and state clearly that the merge remains reserved to the Human Owner under HAG-01. Under `Review policy` `reviewer`, an eligible human other than the author must approve first; under `solo-owner`, the Human Owner reads the PR and merges it personally, and that merge is the approval. Do not enable auto-merge or merge the PR.
+
+## Local Git mode
+
+When `AGENTS.md` sets `Git mode` to `local`, there is no `accepted` branch and agents never open PRs. Instead:
+
+1. Require exactly one target (`F-NNN`, `WP-NNN`, or a set of `DONE` quick tasks named by the Human Owner) and require its tasks to be `DONE`.
+2. Run the declared `Fast CI command` and, if declared, the `Gate CI command`; run `python3 scripts/build-traceability.py --mode lite` and review its warnings.
+3. Review the relevant diff against the team's base branch named by the Human Owner (`git diff <base>...HEAD` plus uncommitted changes) with the Code Reviewer perspective, and QA/Security when risk requires it.
+4. Write `project-memory/state/reviews/<target>-review.md` with scope, findings, check results, residual risks, and a ready-to-paste PR title and description that follow the team's conventions and contain no ASE IDs unless asked.
+5. Report the findings. Opening the PR, requesting reviewers and merging remain human actions under the team's process.

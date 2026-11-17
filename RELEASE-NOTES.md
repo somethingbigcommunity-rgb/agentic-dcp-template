@@ -1,5 +1,17 @@
 # ASE v0.1.0
 
+## v0.2.0-alpha — 2026-11-17
+
+Goal: use ASE today, locally, on existing work repositories.
+
+- **Local Git mode** (`Git mode: local` in `AGENTS.md`): agents never commit, push, switch branches or open PRs; the Human Owner accepts the diff (HAG-01 local). Team branch, PR and CI rules stay unchanged.
+- **`install.py`**: installs into any Git repository without overwriting files, excludes ASE files from Git by default, keeps a team `AGENTS.md` (ASE rules go to `.agents/AGENTS.md`), supports `--dry-run`, `--versioned`, `--uninstall`.
+- **`/ase-adopt`** (P0-A Lite): reconstructs a minimal as-is DCP from the code, records stack and existing test commands, M0-A baseline under HAG-02. Optional local Graphify.
+- **Quick task** in `/ase-plan` for bug fixes and small changes; local variants of `/ase-task` and `/ase-review` (review report + PR draft).
+- **Full agent roster** (DEC-05, 18 roles + `ASE Lead`) generated natively for both harnesses: `.github/agents/*.agent.md` (Copilot) and `.agents/agents/*.md` (Antigravity); glob rules in `.github/instructions/` and `.agents/rules/`. Skills stay in `.agents/skills/`, which both read natively.
+
+Limits: alpha, validated by automated tests (installer, parity of generated files) but not yet on a real work repository. Antigravity agent `tools` use only documented tool names (`view_file`, `grep_search`, `run_command`, `replace_file_content`); creating new files from an Antigravity subagent may need an adjusted tool list. Remote-mode limits of v0.1.0 below still apply.
+
 Initial reusable release, authorized by the Human Owner on 2026-11-17.
 
 ## Supported scope

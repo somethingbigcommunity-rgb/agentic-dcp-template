@@ -5,6 +5,8 @@ description: Turn an approved one-page project idea into a minimal Lite MVP spec
 
 # `/ase-plan`
 
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+
 Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Memory operating rules, and the DCP templates. Design-decision documents may not be copied into a project repository; if a referenced source decision is unavailable, do not claim to have read it or infer additional rules from it. Do not execute implementation tasks.
 
 ## 1. Check project and input
@@ -73,3 +75,11 @@ python3 scripts/next-id.py --type adr
 ```
 
 The helper scans only canonical artifact locations and the append-only task log. If it fails, surface the error and do not guess an ID.
+
+## Local Git mode
+
+When `AGENTS.md` sets `Git mode` to `local`:
+
+- The prerequisite is `M0-A | PASS` in `PROJECT_STATE.md` (from `/ase-adopt`) instead of `M0 | PASS`.
+- Do not create branches, commit or merge. Apply the approved plan in the working tree; the planning task becomes `DONE` after the validation in section 5 passes and the Human Owner confirms the result.
+- **Quick task.** For a single bounded change (bug fix, small feature, investigation) the Human Owner may ask for one task instead of a Wave plan. Create one task from `templates/task-template.md` with an empty `parent` (or the related `F-NNN`/`WP-NNN` if one exists), observable criteria and a risk class; show it and assign it in `NEXT_TASK.md` after approval. No MVP specification, Wave or User Story is required. A parentless task is reported as a traceability warning, which is accepted in Lite.

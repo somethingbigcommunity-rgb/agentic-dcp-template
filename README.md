@@ -2,17 +2,34 @@
 
 Project template for the **Agentic Software Engineering (ASE) harness**. It contains the Development Context Package (DCP), the Project Memory skeleton and the agentic system (skills, role cards, rules, CI workflows).
 
-> Version: **v0.1.0**, an initial Lite release for new projects using GitHub Copilot in VS Code. See [release notes and validation limits](RELEASE-NOTES.md). Antigravity validation is deferred to v0.2; compatibility is not certified.
+> Version: **v0.2.0-alpha**. Adds local adoption on existing repositories, the full agent roster, and native Copilot + Antigravity files. See [release notes and validation limits](RELEASE-NOTES.md).
 
-## Start a new project
+## Use it today on an existing repository (local mode)
+
+Nothing is committed or pushed; the team's Git process is untouched.
+
+```sh
+git clone https://github.com/somethingbigcommunity-rgb/agentic-dcp-template.git ~/ase-template
+python3 ~/ase-template/install.py /path/to/your/repo   # add --dry-run to preview
+```
+
+The installer copies the harness without overwriting any existing file, and hides every installed path through `.git/info/exclude`. If the repository already has an `AGENTS.md`, it keeps it and installs the ASE rules in `.agents/AGENTS.md` instead. `--uninstall` removes the files you did not modify; `--versioned` skips the Git exclusion if the team adopts ASE.
+
+Then, in VS Code (Copilot) or Antigravity:
+
+1. Select the **ASE Lead** agent and run `/ase-adopt`: it reads the code, proposes the as-is DCP, stack and test commands, and records the baseline (M0-A) after your approval.
+2. For each piece of work: `/ase-plan` (a *quick task* for a bug fix or small change, a plan for a feature), then `/ase-task`.
+3. Before opening the team PR: `/ase-review` writes a review report and a ready-to-paste PR description. You commit, push and open the PR yourself.
+
+Check that your organization allows AI assistants on that code first.
+
+## Start a new project (remote mode)
 
 1. Create a repository with **Use this template**.
 2. Open it in VS Code and run `/ase-setup`.
 3. Once the M0 checklist is complete, run `/ase-plan`, then `/ase-task` for each task and `/ase-review` for each Work Package.
 
-The v0.1 setup supports new projects in Lite mode with the `vscode` engine. Other modes, AI Studio, and adoption of existing repositories are not implemented. Graphify is optional.
-
-For an existing work repository, do not copy this skeleton over its current structure or branch policy: the adoption workflow is planned for v0.2. For a new work project, first obtain your organization's approval for the tools, repository visibility, and handling of its code and data.
+New-project setup supports Lite mode with the `vscode` engine. Standard/Enterprise and AI Studio are not implemented. Graphify is optional.
 
 `/ase-setup` asks for the stack and real Fast and Gate commands; it does not install dependencies or invent passing checks. It can prepare a project locally, but M0 also requires GitHub connectivity, an existing `accepted` branch, and successful hosted checks. Branch protection is required where available. If GitHub plan or permissions prevent it, only an explicit HAG-06 approval of the procedural HAG-01 fallback recorded in the M0 checklist can substitute; this accepts that direct pushes and early merges cannot be technically blocked. Creating the initial `accepted` branch, changing GitHub settings, pushing, and starting the hosted smoke workflow require explicit permission. An existing `accepted` branch or protection is never overwritten automatically.
 
@@ -23,9 +40,10 @@ GitHub requires the approving reviewer to be a person with suitable access other
 | Path | Content |
 |------|---------|
 | `AGENTS.md` | Global rules for every agent (both harnesses) |
-| `.agents/skills/` | `ase-*` skills, the single source for both harnesses; role cards in `ase-roles/references/` |
-| `.agents/agents/`, `.agents/rules/` | Antigravity-specific agents and rules |
-| `.github/agents/`, `.github/instructions/` | Copilot-specific agents and instructions |
+| `.agents/skills/` | `ase-*` skills (including `/ase-adopt`), read natively by both Copilot and Antigravity; role cards in `ase-roles/references/` |
+| `.agents/agents/`, `.agents/rules/` | Antigravity agents (19, DEC-05 roster + `ase-lead`) and glob rules |
+| `.github/agents/`, `.github/instructions/` | The same agents and rules in Copilot's native format |
+| `install.py` | Installer for existing repositories (local mode) |
 | `.github/workflows/` | CI: fast checks on `main`, binding gate on PRs to `accepted`, and an explicitly started M0 Gate smoke test |
 | `project-memory/` | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`) |
 | `scripts/` | Deterministic helpers for M0 verification, post-merge `accepted` PR audit, next-ID allocation, task logging and traceability; opt-in `accepted` branch protection |

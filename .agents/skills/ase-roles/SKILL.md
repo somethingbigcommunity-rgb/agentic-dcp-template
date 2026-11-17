@@ -5,6 +5,8 @@ description: Load the relevant Lite role cards when a task requires product, arc
 
 # ASE Lite Role Cards
 
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+
 Load only the role cards relevant to the assigned task. These cards add a perspective; they do not authorize scope changes or override `AGENTS.md`, approved requirements, ADRs, or Human Approval Gates.
 
 Core roles:

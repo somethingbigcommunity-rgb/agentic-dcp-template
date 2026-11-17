@@ -5,6 +5,8 @@ description: Execute exactly one assigned ASE task with the Iteration Protocol, 
 
 # `/ase-task`
 
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+
 Execute one assigned task and stop. Follow `AGENTS.md` and the Iteration Protocol in `project-memory/dcp/04-implementation/iteration-protocol.md`. Do not improvise if a required project command, script, or skill is missing.
 
 ## 1. Select and validate the task
@@ -61,3 +63,12 @@ After all criteria pass:
 
 7. Update `NEXT_TASK.md` and other descriptive state only when the task provides enough evidence to do so. Do not hand-edit `TRACEABILITY.md`; rebuild it with `scripts/build-traceability.py`.
 8. Report status, files, checks and results, log entry, commit, and any blocker. Stop; do not begin another task.
+
+## Local Git mode
+
+When `AGENTS.md` sets `Git mode` to `local`, these rules replace the branch, commit, merge and CI steps above:
+
+- Work in the current working tree and branch. Do not create or switch branches, commit, push, or open PRs. Require the Human Owner to confirm before starting if the worktree already has unrelated changes, and never discard them.
+- Run the declared `Fast CI command` (not `scripts/ci/fast.sh`) and the focused checks for the change. If it is `none`, record that no automated check exists; do not claim one passed.
+- After the criteria pass, run `python3 scripts/build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, and a suggested commit message without ASE IDs (unless the Human Owner wants them).
+- Set the task `DONE` and append the task-log row only after the Human Owner states that the diff is accepted (HAG-01 in local mode). If the human rejects it, count one failed cycle and correct within the budget.
