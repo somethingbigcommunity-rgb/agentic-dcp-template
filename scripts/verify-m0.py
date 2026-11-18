@@ -125,7 +125,6 @@ def check_local(root: Path) -> None:
     settings = configuration(root)
     expected = {
         "Working mode": "Lite",
-        "Engine": "vscode",
         "Working branch": "main",
         "Accepted branch": "accepted",
         "Fast CI command": "scripts/ci/fast.sh",
@@ -134,6 +133,8 @@ def check_local(root: Path) -> None:
     for key, value in expected.items():
         if settings.get(key) != value:
             raise CheckError(f"{key} must be {value!r} for Lite P0")
+    if settings.get("Engine") not in {"antigravity", "vscode"}:
+        raise CheckError("Engine must be 'antigravity' or 'vscode' for Lite P0")
     policy = settings.get("Review policy")
     if policy not in REVIEW_POLICIES:
         raise CheckError("Review policy must be 'reviewer' or 'solo-owner'")

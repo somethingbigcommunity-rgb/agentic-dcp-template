@@ -5,7 +5,7 @@ description: Review a completed ASE Work Package, verify local evidence and trac
 
 # `/ase-review`
 
-> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. When `.ase/` encapsulation is present, `project-memory/`, `artifacts/`, `scripts/`, and `templates/` resolve under `.ase/`. Always write review summaries, PR descriptions, and stakeholder messages in the Human Owner's first-person singular voice (`"I"` / `"Io"`, never `"we"` / `"noi"`).
 
 Review one completed Work Package and open a Pull Request from `main` to `accepted`. Follow `AGENTS.md`, DEC-10, DEC-11, and the project's configured CI commands. This skill never merges into `accepted`.
 
@@ -23,7 +23,7 @@ Review one completed Work Package and open a Pull Request from `main` to `accept
 1. Require `scripts/ci/fast.sh` and `scripts/ci/gate.sh`; run the declared fast check on `main`. A missing command or failed check is a blocker, not a pass.
 2. Run `python3 scripts/build-traceability.py --mode <lite|standard|enterprise>` using the mode in `AGENTS.md`. Review every warning and error. Lite gaps are visible warnings; unresolved IDs always fail, and Standard/Enterprise requirements without named tests fail.
 3. If regenerating `TRACEABILITY.md` changed the worktree, stop. Do not silently include or commit generated state outside a task; report the change and require it to be committed as part of the relevant task before retrying.
-4. Inspect the complete `accepted...main` diff. Verify scope against the approved Feature/WP, task commit prefixes, criteria, tests, configured risk controls, and the applicable Definition of Done. Do not invent missing evidence.
+4. Inspect the complete `accepted...main` diff. Verify scope against the approved Feature/WP, task commit prefixes, criteria, tests, configured risk controls, and the applicable Definition of Done. Run `python3 scripts/verify-external-clean.py` on any external-facing artifacts (`plugins/**`, `*.pdf`, external `docs/**`, application code) touched by the WP to confirm zero ASE framework references. Do not invent missing evidence.
 5. If any evidence or check is missing, report the exact blocker and stop without creating a PR.
 
 ## 3. Open the PR
@@ -41,5 +41,5 @@ When `AGENTS.md` sets `Git mode` to `local`, there is no `accepted` branch and a
 1. Require exactly one target (`F-NNN`, `WP-NNN`, or a set of `DONE` quick tasks named by the Human Owner) and require its tasks to be `DONE`.
 2. Run the declared `Fast CI command` and, if declared, the `Gate CI command`; run `python3 scripts/build-traceability.py --mode lite` and review its warnings.
 3. Review the relevant diff against the team's base branch named by the Human Owner (`git diff <base>...HEAD` plus uncommitted changes) with the Code Reviewer perspective, and QA/Security when risk requires it.
-4. Write `project-memory/state/reviews/<target>-review.md` with scope, findings, check results, residual risks, and a ready-to-paste PR title and description that follow the team's conventions and contain no ASE IDs unless asked.
-5. Report the findings. Opening the PR, requesting reviewers and merging remain human actions under the team's process.
+4. Write `project-memory/state/reviews/<target>-review.md` (and any external handover copy in `artifacts/05-release-and-handover/`) with scope, findings, check results, residual risks, and a ready-to-paste PR title and description written strictly in first-person singular (`"I"`, never `"we"`) that follow the team's conventions and contain no ASE framework references. Run `verify-external-clean.py --check-first-person` on the review report and any external deliverables (`plugins/**`, `artifacts/**`, `*.pdf`, application code) touched by the target.
+5. Report the findings and optionally offer to generate a stakeholder-level **Delivery Acceptance & Verification Report PDF** (`doc_type: "release-report"`, saved to `artifacts/05-release-and-handover/`, `work` or `personal` profile) via `build-stakeholder-pdf.py`. Opening the PR, requesting reviewers and merging remain human actions under the team's process.

@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--date", required=True, help="Completion date in YYYY-MM-DD format")
     parser.add_argument("--task", required=True, help="Task ID (T-NNNN)")
     parser.add_argument("--parent", default="", help="Optional parent ID")
-    parser.add_argument("--engine", required=True, choices=("vscode", "ai-studio"))
+    parser.add_argument("--engine", required=True, choices=("antigravity", "vscode", "ai-studio"))
     parser.add_argument("--outcome", required=True, choices=("DONE", "BLOCKED"))
     parser.add_argument("--cycles", required=True, type=int, help="Failed verification cycles (0-3)")
     parser.add_argument("--note", required=True, help="Concise completion note")

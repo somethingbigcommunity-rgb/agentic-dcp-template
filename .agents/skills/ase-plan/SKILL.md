@@ -5,7 +5,7 @@ description: Turn an approved one-page project idea into a minimal Lite MVP spec
 
 # `/ase-plan`
 
-> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. When `.ase/` encapsulation is present, `project-memory/`, `artifacts/`, `scripts/`, and `templates/` resolve under `.ase/`. Always use first-person singular (`"I"`, addressing the Human Owner as `"you"`, never `"we"`).
 
 Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Memory operating rules, and the DCP templates. Design-decision documents may not be copied into a project repository; if a referenced source decision is unavailable, do not claim to have read it or infer additional rules from it. Do not execute implementation tasks.
 
@@ -58,7 +58,10 @@ After explicit approval:
 3. Set the planning task to `IN_REVIEW`; inspect the full diff, run the declared preliminary checks, commit with a `T-NNNN:` message, and follow the repository's authorized merge procedure into `main`. Never merge into `accepted`.
 4. Run the configured CI on `main`, or the declared Fast CI command as local gate evidence when hosted CI is not configured. If a check fails, count one correction cycle, make only a bounded plan correction, and rerun the relevant checks. At three failed cycles, set `BLOCKED`, record the impact, and stop without merging the blocked branch.
 5. Set the planning task to `DONE` only after the approved artifacts and state updates pass validation and the applicable gate passes on `main`. For `DONE` or `BLOCKED`, append exactly one task-log entry using `scripts/append-task-log.py`; never hand-edit the log.
-6. Stop after reporting the plan and the next assigned implementation task. Do not run `/ase-task`.
+6. Stop after reporting the plan and the next assigned implementation task, and proactively offer two optional follow-ups when relevant:
+   - **Optional Stakeholder PDF (`project-plan` / `architecture-dossier`):** Offer to generate a stakeholder-level executive PDF (`build-stakeholder-pdf.py` from `templates/stakeholder-pdf-template.json`, saving the spec in `artifacts/specs/` and the PDF in `artifacts/02-planning/` or `artifacts/03-architecture/`, using `context_profile: "work"` with Sopra Steria Group palette/metadata or `"personal"` with a project-suited palette, verified clean via `verify-external-clean.py`).
+   - **Proactive Reusable Domain Plugin (`/ase-plugin`):** If 2 or more planned Features/Waves share domain-specific guardrails or deterministic validation scripts that are reusable across similar projects, propose packaging them into an ASE-external plugin under `plugins/<slug>/` (HAG-02).
+   Do not run `/ase-task`.
 
 ## Identifier helper
 

@@ -140,8 +140,15 @@ def read_artifacts(directory: Path) -> dict[str, Artifact]:
     return result
 
 
+def resolve_memory_dir(root: Path) -> Path:
+    encapsulated = root / ".ase" / "project-memory"
+    if encapsulated.is_dir():
+        return encapsulated
+    return root / "project-memory"
+
+
 def read_requirements(root: Path) -> dict[str, str]:
-    directory = root / "project-memory/dcp/01-requirements"
+    directory = resolve_memory_dir(root) / "dcp/01-requirements"
     result: dict[str, str] = {}
     if not directory.is_dir():
         return result
@@ -166,7 +173,7 @@ def build_matrix(
     no_git: bool = False,
     tests_dir: Path = Path("tests"),
 ) -> tuple[str, list[str], list[str]]:
-    memory = root / "project-memory"
+    memory = resolve_memory_dir(root)
     requirements = read_requirements(root)
     stories = read_artifacts(memory / "dcp/01-requirements/user-stories")
     features = read_artifacts(memory / "dcp/04-implementation/features")
@@ -389,7 +396,11 @@ def build_matrix(
 def main() -> int:
     args = parse_args()
     root = args.root.resolve()
-    output = args.output if args.output.is_absolute() else root / args.output
+    default_out = Path("project-memory/state/TRACEABILITY.md")
+    if args.output == default_out and (root / ".ase" / "project-memory").is_dir():
+        output = root / ".ase" / default_out
+    else:
+        output = args.output if args.output.is_absolute() else root / args.output
     try:
         content, warnings, errors = build_matrix(
             root, args.mode, args.no_git, args.tests_dir

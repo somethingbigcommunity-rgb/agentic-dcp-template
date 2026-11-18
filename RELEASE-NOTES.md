@@ -1,16 +1,21 @@
-# ASE v0.1.0
+# ASE v0.2.0
 
-## v0.2.0-alpha — 2026-11-17
+## v0.2.0 — 2026-11-18
 
-Goal: use ASE today, locally, on existing work repositories.
+Goal: full Antigravity & Copilot parity, existing-repository adoption (`--upgrade`), proactive ASE-external reusable plugins, optional stakeholder-level PDF deliverables (`work` Sopra Steria Group vs `personal` palettes), and mandatory zero-ASE-footprint verification on external artifacts.
 
 - **Local Git mode** (`Git mode: local` in `AGENTS.md`): agents never commit, push, switch branches or open PRs; the Human Owner accepts the diff (HAG-01 local). Team branch, PR and CI rules stay unchanged.
-- **`install.py`**: installs into any Git repository without overwriting files, excludes ASE files from Git by default, keeps a team `AGENTS.md` (ASE rules go to `.agents/AGENTS.md`), supports `--dry-run`, `--versioned`, `--uninstall`.
+- **`install.py` & Encapsulated `.ase/` Layout (Option 1A)**: installs into any Git repository without overwriting files, encapsulates `.ase/project-memory/`, `.ase/artifacts/`, `.ase/scripts/`, and `.ase/templates/` while keeping `.agents/`, `.github/`, and `AGENTS.md` at the root, excludes ASE files from Git by default, keeps a team `AGENTS.md` (ASE rules go to `.agents/AGENTS.md` with `.agents/rules/ase.md` and `.github/instructions/ase.instructions.md` pointers), and supports `--upgrade`, `--verify-layout`, `--flat`, `--no-git`, `--dry-run`, `--versioned`, `--uninstall`.
+- **Lifecycle Artifact Directories (`artifacts/01-discovery/`..`05-release-and-handover/` & `specs/`)**: pre-created folders for every lifecycle deliverable (`as-is-report`, `project-plan`, `architecture-dossier`, reconciliation/verification evidence, `release-report`, and ready-to-paste PR descriptions), plus all DCP folders (`waves/`, `features/`, `state/reviews/`).
+- **Strictly First-Person Singular (`"I"`, Never `"We"`) Voice Rule (`AGENTS.md` §11 & `--check-first-person`)**: agents never use `"we"` / `"noi"` when speaking to the Human Owner or drafting messages/commits/PRs; `verify-external-clean.py --check-first-person` enforces first-person singular on handover and review drafts.
 - **`/ase-adopt`** (P0-A Lite): reconstructs a minimal as-is DCP from the code, records stack and existing test commands, M0-A baseline under HAG-02. Optional local Graphify.
+- **Proactive ASE-External Reusable Plugins (`/ase-plugin` & `scripts/sync-plugin.py`)**: identifies repeatable domain skills, rules, and validators, scaffolds them under `plugins/<slug>/` with zero ASE dependency, and syncs them locally (`.agents/` + `.github/`) or globally (`~/.gemini/config/plugins/<slug>/`).
+- **Optional Stakeholder-Level PDF Documentation (`scripts/build-stakeholder-pdf.py` & `templates/stakeholder-pdf-template.json`)**: pure-Python Type1 PDF generator with Adobe AFM metrics, native HD vector diagrams (Work Hierarchy & PERT/CPM Critical Path), and formalized `context_profile` modes (`work` = Sopra Steria Group palette & corporate metadata; `personal` = project-suited palette & metadata).
+- **Mandatory Zero-ASE-Footprint Verification (`scripts/verify-external-clean.py`)**: inspects text files and `.pdf` streams to block ASE framework references (`Agentic Software Engineering`, `ASE`, `DCP`, `HAG-01..07`, `M0-A`, `/ase-*`, `project-memory/`, `.ase-install.json`, `ase-lead`) while allowing standard project/requirement IDs (`W-01`, `T-001`, `REQ-001`).
 - **Quick task** in `/ase-plan` for bug fixes and small changes; local variants of `/ase-task` and `/ase-review` (review report + PR draft).
 - **Full agent roster** (DEC-05, 18 roles + `ASE Lead`) generated natively for both harnesses: `.github/agents/*.agent.md` (Copilot) and `.agents/agents/*.md` (Antigravity); glob rules in `.github/instructions/` and `.agents/rules/`. Skills stay in `.agents/skills/`, which both read natively.
 
-Limits: alpha, validated by automated tests (installer, parity of generated files) but not yet on a real work repository. Antigravity agent `tools` use only documented tool names (`view_file`, `grep_search`, `run_command`, `replace_file_content`); creating new files from an Antigravity subagent may need an adjusted tool list. Remote-mode limits of v0.1.0 below still apply.
+Limits: alpha, validated by automated tests (installer, parity of generated files) and adapted for Google Antigravity native `.agents` (`read_file`, `edit_file`, `write_file`, `run_command`, `manage_task`, `invoke_subagent`, `send_message`, `manage_subagents`, `ask_question`, `search_web`, `subagent`/`mainAgent` frontmatter, and `**/`-prefixed rule globs). Remote-mode limits of v0.1.0 below still apply.
 
 Initial reusable release, authorized by the Human Owner on 2026-11-17.
 

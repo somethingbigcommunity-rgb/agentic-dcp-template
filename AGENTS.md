@@ -9,7 +9,8 @@ Filled in by `/ase-setup` during P0 (new project, `remote` Git mode) or by `/ase
 | Setting | Value |
 |---------|-------|
 | Working mode | `Lite` <!-- Lite | Standard | Enterprise --> |
-| Engine | `vscode` <!-- vscode | ai-studio --> |
+| Engine | `antigravity` <!-- antigravity | vscode | ai-studio --> |
+| Project context | `work` <!-- work | personal --> |
 | Git mode | `remote` <!-- remote | local --> |
 | Working branch | `main` |
 | Accepted branch | `accepted` |
@@ -28,13 +29,25 @@ The project state has exactly three sources:
 
 External tools (Jira, Confluence, boards) are secondary: they may receive copies, never decide. If Project Memory and code diverge, report it; do not silently "fix" either side.
 
-## 2. Project Memory
+## 2. Project Memory, `.ase/` Encapsulation, and Lifecycle Artifact Directories
+
+When installed into a repository via `install.py` (Option 1A default), only the required IDE hooks (`.agents/`, `.github/`, and `AGENTS.md` or `.agents/AGENTS.md`) sit at the repository root, while ASE's operational directories are encapsulated inside `.ase/` (`.ase/project-memory/`, `.ase/artifacts/`, `.ase/scripts/`, `.ase/templates/`). In a standalone template repository (`--flat`), they sit at the root. Whenever a skill or rule refers to `project-memory/`, `artifacts/`, `scripts/`, or `templates/`, use `.ase/<folder>/` when `.ase/` is present.
 
 ```
-project-memory/
-├── dcp/     ← design intent (NORMATIVE), sections 00–07
-├── adr/     ← one file per decision, ADR-NNN-<slug>.md (NORMATIVE)
-└── state/   ← current state (DESCRIPTIVE)
+.ase/ (or root in --flat mode)
+├── project-memory/
+│   ├── dcp/     ← design intent (NORMATIVE), sections 00–07 (including waves/, features/, tasks/, user-stories/)
+│   ├── adr/     ← one file per decision, ADR-NNN-<slug>.md (NORMATIVE)
+│   └── state/   ← current state (DESCRIPTIVE, including state/reviews/)
+├── artifacts/   ← generated lifecycle deliverables (verified zero-ASE-footprint)
+│   ├── 01-discovery/            ← P0-A as-is-report PDFs & discovery notes
+│   ├── 02-planning/             ← P1–P4 project-plan PDFs & roadmaps
+│   ├── 03-architecture/         ← P3 architecture-dossier PDFs & diagrams
+│   ├── 04-verification/         ← P6–P7 reconciliation reports & test/benchmark evidence
+│   ├── 05-release-and-handover/ ← P7–P8 release-report PDFs, PR descriptions & stakeholder messages
+│   └── specs/                   ← JSON specs for build-stakeholder-pdf.py
+├── scripts/     ← deterministic helpers (next-id.py, append-task-log.py, build-traceability.py, etc.)
+└── templates/   ← document and PDF templates
 ```
 
 - **Normative** files (`dcp/`, `adr/`) change only through human approval (HAG-02 for architecture). Exception: the `status` and `correction_cycles` fields of task files in `dcp/04-implementation/tasks/` are descriptive.
@@ -123,6 +136,7 @@ When an active gate applies, stop and ask; record approved architectural decisio
 | `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog; assign the first ready task in `NEXT_TASK.md` |
 | `/ase-task` | Run the next task with the Iteration Protocol |
 | `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence (`remote`), or a review report and PR description draft for the human (`local`) |
+| `/ase-plugin` | Scaffold, validate, and sync project-derived reusable domain plugins (`plugins/<slug>/`) with zero ASE dependency |
 
 The full agent roster (DEC-05) is installed natively for both harnesses: `.github/agents/*.agent.md` for GitHub Copilot and `.agents/agents/*.md` for Antigravity. Start from `ASE Lead`; it delegates to specialists only when the task needs them. Skills live in `.agents/skills/` (read natively by both); file-scoped rules are in `.github/instructions/` (Copilot) and `.agents/rules/` (Antigravity). Agents follow this file; they do not add authority.
 
@@ -131,3 +145,21 @@ If the skill for a command is not installed, say so instead of improvising its b
 ## 9. Language
 
 Harness files (skills, role cards, agents, rules, templates, this file) are in English.
+
+## 10. External-facing artifacts, stakeholder PDFs, and reusable domain plugins
+
+1. **Zero ASE footprint on external-facing artifacts (`scripts/verify-external-clean.py`):**
+   - Every artifact potentially shared with external people or systems (stakeholder PDFs `*.pdf`, exported domain plugins `plugins/**`, application code/schemas/queries, external documentation `docs/**`, and local-mode PR drafts `project-memory/state/reviews/*.md`) must be verified free of references to the ASE framework (`Agentic Software Engineering`, `ASE`, `agentic-dcp-template`, `dcp-template`, `Development Context Package`, `DCP`, `Project Memory`, `project-memory/`, `HAG-01`..`HAG-07`, `Human Approval Gate`, `Iteration Protocol`, `/ase-*`, `M0-A`, `.ase-install.json`, `ase-lead`).
+   - Standard planning and requirement identifiers (`W-01`, `T-001`, `T-0001`, `REQ-001`, `F-001`, `US-001`, `WP-001`, `ADR-001`) are allowed in plans and stakeholder PDFs.
+   - Run `python3 scripts/verify-external-clean.py <paths>` before marking a task `IN_REVIEW`/`DONE` or handing off an external deliverable, and record the `PASS` output.
+2. **Optional stakeholder-level PDF documentation (`scripts/build-stakeholder-pdf.py`):**
+   - At key milestones — P0-A adoption (`as-is-report`), P1–P4 planning (`project-plan`), P3 architecture (`architecture-dossier`), and P7/P8 review/release (`release-report`) — proactively offer to generate an optional stakeholder-level PDF using `templates/stakeholder-pdf-template.json` and `python3 scripts/build-stakeholder-pdf.py --spec <spec.json> --output <file.pdf>`.
+   - Use `context_profile: "work"` (when `Project context` is `work`, applying the **Sopra Steria Group** brand color palette and corporate metadata) or `context_profile: "personal"` (when `Project context` is `personal`, selecting the palette preset best suited to the project domain).
+3. **Proactive ASE-external reusable domain plugins (`/ase-plugin` & `scripts/sync-plugin.py`):**
+   - When the project uses domain-specific guardrails, multi-tool stack conventions, or deterministic validators that could be reused across similar projects, proactively propose packaging them into `plugins/<plugin-slug>/` (HAG-02) via `/ase-plugin`, completely decoupled from ASE.
+
+## 11. Communication voice and authorship — strictly "I", never "We"
+
+1. **ASE has no voice or co-authorship:** ASE is an internal engineering harness, never a speaker or team member.
+2. **In direct conversation with the Human Owner:** Address the Human Owner as `"you"` (`"tu"`) and refer to your own agent actions in first-person singular (`"I"` / `"Io"`). **Never** use collaborative first-person plural (`"we"`, `"us"`, `"our"`, `"noi"`, `"abbiamo"`) to describe work done in the project.
+3. **In all drafted messages, answers, emails, commit messages, PR descriptions, review summaries, and stakeholder documents proposed for the Human Owner:** Write strictly in the **Human Owner's first-person singular voice (`"I"` / `"Io"` / `"Ho..."`)** — never `"we"` / `"noi"` / `"abbiamo"`. Verify drafted handover/review files with `python3 scripts/verify-external-clean.py --check-first-person <paths>` (automatically enforced on `05-release-and-handover/` and `state/reviews/`).

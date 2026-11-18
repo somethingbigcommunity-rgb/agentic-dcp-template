@@ -3,7 +3,7 @@ id: T-0000
 parent:
 external:
 risk: medium
-engine: vscode
+engine: antigravity
 status: TODO
 correction_cycles: 0
 criteria:

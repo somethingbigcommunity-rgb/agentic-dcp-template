@@ -32,16 +32,24 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def resolve_memory_dir(root: Path) -> Path:
+    encapsulated = root / ".ase" / "project-memory"
+    if encapsulated.is_dir():
+        return encapsulated
+    return root / "project-memory"
+
+
 def canonical_files(root: Path, identifier_type: str) -> list[Path]:
     prefix, width, relative_dirs = ID_TYPES[identifier_type]
     paths: set[Path] = set()
+    memory_dir = resolve_memory_dir(root)
     for relative_dir in relative_dirs:
-        directory = root / "project-memory" / relative_dir
+        directory = memory_dir / relative_dir
         if directory.is_dir():
             paths.update(directory.rglob("*.md"))
 
     if identifier_type == "task":
-        task_log = root / "project-memory/state/TASK_LOG.md"
+        task_log = memory_dir / "state/TASK_LOG.md"
         if task_log.is_file():
             paths.add(task_log)
 

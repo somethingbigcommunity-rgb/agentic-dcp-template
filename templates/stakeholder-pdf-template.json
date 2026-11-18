@@ -1,0 +1,80 @@
+{
+  "metadata": {
+    "context_profile": "work",
+    "doc_type": "project-plan",
+    "palette": "sopra-steria",
+    "custom_colors": {
+      "primary": "#4B1E52",
+      "accent": "#CF022B",
+      "secondary": "#EF7D00",
+      "dark_neutral": "#1E232A",
+      "light_surface": "#F5F5F7"
+    },
+    "title": "Enterprise Analytics Modernization — Delivery Plan & Architecture",
+    "subtitle": "Executive Scope, Work Breakdown, Critical Path & Verification Baseline",
+    "project": "Analytics Platform Y26",
+    "organization": "Sopra Steria Group S.p.A.",
+    "client": "Client Organization",
+    "author": "Solution Architecture Team",
+    "audience": "Steering Committee & Technical Stakeholders",
+    "version": "1.0",
+    "date": "2026-11-18",
+    "confidentiality": "Confidential — Client & Internal Alignment"
+  },
+  "sections": [
+    {
+      "heading": "1. Executive Summary & Scope",
+      "paragraphs": [
+        "This document defines the scope, requirements baseline, work breakdown structure, and delivery schedule for the Analytics Platform initiative.",
+        "All deliverables are structured into incremental waves with measurable verification criteria."
+      ],
+      "bullets": [
+        "REQ-001: Semantic data model with automated row-level security verification.",
+        "REQ-002: Executive KPI dashboard with year-over-year comparison.",
+        "REQ-003: Automated regression and query cost validation gate."
+      ]
+    },
+    {
+      "heading": "2. Work Breakdown & Critical Path",
+      "hierarchy_diagram": {
+        "caption": "Figure 1: Proposed Work Hierarchy (Waves -> Features -> User Stories -> Tasks)",
+        "root": { "id": "W-01", "title": "W-01: Foundation & Validation", "subtitle": "Schema & Guardrails Baseline" },
+        "waves": [
+          { "id": "W-02", "title": "W-02: Core Semantic Model", "subtitle": "REQ-001 & Security Policies" },
+          { "id": "W-03", "title": "W-03: Executive Dashboards", "subtitle": "REQ-002 & KPI Views" }
+        ],
+        "features": [
+          { "id": "F-001", "title": "F-001: Validation Suite", "subtitle": "T-0001..T-0002 Automated Checks" },
+          { "id": "F-002", "title": "F-002: Access Control Layer", "subtitle": "US-001..US-002 Verification" },
+          { "id": "F-003", "title": "F-003: Release Sign-Off", "subtitle": "Performance & Acceptance Gate" }
+        ]
+      },
+      "critical_path_diagram": {
+        "caption": "Figure 2: Critical Path (PERT/CPM — Primary Delivery Track vs. Parallel Track)",
+        "primary_track": [
+          { "code": "T-0001", "title": "Baseline & Schema", "duration": "2d (Crit)" },
+          { "code": "T-0002", "title": "Core Model (REQ-001)", "duration": "4d (Crit)" },
+          { "code": "T-0003", "title": "Dashboard Views", "duration": "4d (Crit)" },
+          { "code": "T-0004", "title": "System Verification", "duration": "2d (Crit)" }
+        ],
+        "parallel_track": {
+          "code": "T-0005",
+          "title": "External Environment Provisioning & UAT Sign-Off",
+          "duration": "Parallel Track (Float: 3d)"
+        }
+      }
+    },
+    {
+      "heading": "3. Requirements & Delivery Schedule",
+      "table": {
+        "headers": ["ID", "Work Item / Requirement", "Owner", "Target Window", "Verification Evidence"],
+        "col_widths": [0.12, 0.34, 0.18, 0.16, 0.20],
+        "rows": [
+          ["REQ-001", "Core semantic layer & access rules", "Data Architecture", "Wave W-01", "Automated policy test"],
+          ["REQ-002", "Executive KPI views & filters", "BI Engineering", "Wave W-02", "SQL reconciliation"],
+          ["REQ-003", "Release verification & handover", "QA & Lead", "Wave W-03", "Acceptance report"]
+        ]
+      }
+    }
+  ]
+}

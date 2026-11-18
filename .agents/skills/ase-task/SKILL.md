@@ -5,7 +5,7 @@ description: Execute exactly one assigned ASE task with the Iteration Protocol, 
 
 # `/ase-task`
 
-> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file.
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. When `.ase/` encapsulation is present, `project-memory/`, `artifacts/`, `scripts/`, and `templates/` resolve under `.ase/`. Always speak and draft commit/PR/handover messages in first-person singular (`"I"` / `"Io"`, never `"we"` / `"noi"`).
 
 Execute one assigned task and stop. Follow `AGENTS.md` and the Iteration Protocol in `project-memory/dcp/04-implementation/iteration-protocol.md`. Do not improvise if a required project command, script, or skill is missing.
 
@@ -41,7 +41,7 @@ If a required specialist review cannot be obtained, record it as `UNAVAILABLE`, 
 After all criteria pass:
 
 1. Record changed files, verification commands/results, evidence, known issues, and architecture deviations in the task report.
-2. Set status to `IN_REVIEW` and inspect the complete diff. If review or CI finds a problem, return it to `IN_PROGRESS`, count one failed verification cycle, and resolve findings within the remaining correction-cycle budget.
+2. Set status to `IN_REVIEW` and inspect the complete diff. For any modified or created external-facing files (application code, `plugins/**`, external `docs/**`, or `*.pdf` files — everything outside `project-memory/`, `.agents/`, `.github/`, `templates/`, `scripts/`), run `python3 scripts/verify-external-clean.py <external-paths>` and record its `PASS` output in the task report. If review, `verify-external-clean.py`, or CI finds a problem, return it to `IN_PROGRESS`, count one failed verification cycle, and resolve findings within the remaining correction-cycle budget.
 3. Commit task changes with a message starting `T-NNNN:`. Then run `python3 scripts/build-traceability.py --mode <project-mode>` and review its warnings/errors. If it updates `TRACEABILITY.md`, commit that generated file with the same task ID. This is a generated state artifact; never edit it by hand.
 4. Follow the repository's preliminary check and merge procedure for `task/<ID>` into `main`; never merge into `accepted`.
 5. Confirm the configured CI on `main` is green. If the project is local-only and has no CI automation, run its declared Fast CI command on `main` and record the result explicitly as local gate evidence, not hosted CI. Only after the applicable gate passes set status to `DONE`. If review, merge, or the applicable gate is pending, unavailable, or failing, leave the task `IN_REVIEW` or return it to `IN_PROGRESS` for a failed check; do not log it as closed.
@@ -53,13 +53,13 @@ After all criteria pass:
      --date YYYY-MM-DD \
      --task T-NNNN \
      --parent US-NNN \
-     --engine vscode \
+     --engine antigravity \
      --outcome DONE \
      --cycles 0 \
      --note "Short outcome"
    ```
 
-   Use an empty `--parent` if the task has no parent. Use the actual project engine, date, final cycle count, and a concise note. If the helper fails, surface the error and do not claim the log was updated.
+   Use an empty `--parent` if the task has no parent. Use the actual project engine (`antigravity` or `vscode`), date, final cycle count, and a concise note. If the helper fails, surface the error and do not claim the log was updated.
 
 7. Update `NEXT_TASK.md` and other descriptive state only when the task provides enough evidence to do so. Do not hand-edit `TRACEABILITY.md`; rebuild it with `scripts/build-traceability.py`.
 8. Report status, files, checks and results, log entry, commit, and any blocker. Stop; do not begin another task.
@@ -70,5 +70,5 @@ When `AGENTS.md` sets `Git mode` to `local`, these rules replace the branch, com
 
 - Work in the current working tree and branch. Do not create or switch branches, commit, push, or open PRs. Require the Human Owner to confirm before starting if the worktree already has unrelated changes, and never discard them.
 - Run the declared `Fast CI command` (not `scripts/ci/fast.sh`) and the focused checks for the change. If it is `none`, record that no automated check exists; do not claim one passed.
-- After the criteria pass, run `python3 scripts/build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, and a suggested commit message without ASE IDs (unless the Human Owner wants them).
+- After the criteria pass, run `build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, and a suggested commit message written in first-person singular (`"I"`, never `"we"`) without ASE IDs (unless the Human Owner wants them). Place any reconciliation or verification outputs in `artifacts/04-verification/` and verify them with `verify-external-clean.py`.
 - Set the task `DONE` and append the task-log row only after the Human Owner states that the diff is accepted (HAG-01 in local mode). If the human rejects it, count one failed cycle and correct within the budget.

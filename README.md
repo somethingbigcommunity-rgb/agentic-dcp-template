@@ -2,7 +2,7 @@
 
 Project template for the **Agentic Software Engineering (ASE) harness**. It contains the Development Context Package (DCP), the Project Memory skeleton and the agentic system (skills, role cards, rules, CI workflows).
 
-> Version: **v0.2.0-alpha**. Adds local adoption on existing repositories, the full agent roster, and native Copilot + Antigravity files. See [release notes and validation limits](RELEASE-NOTES.md).
+> Version: **v0.2.0**. Adds local adoption on existing repositories (`--upgrade`, `--no-git`), the full agent roster with native Antigravity + Copilot parity, proactive ASE-external reusable domain plugins (`/ase-plugin`), optional stakeholder-level executive PDF generation (`work` Sopra Steria Group vs `personal` palettes), and mandatory zero-ASE-footprint verification (`verify-external-clean.py`). See [release notes and validation limits](RELEASE-NOTES.md).
 
 ## Use it today on an existing repository (local mode)
 
@@ -13,7 +13,7 @@ git clone https://github.com/somethingbigcommunity-rgb/agentic-dcp-template.git 
 python3 ~/ase-template/install.py /path/to/your/repo   # add --dry-run to preview
 ```
 
-The installer copies the harness without overwriting any existing file, and hides every installed path through `.git/info/exclude`. If the repository already has an `AGENTS.md`, it keeps it and installs the ASE rules in `.agents/AGENTS.md` instead. `--uninstall` removes the files you did not modify; `--versioned` skips the Git exclusion if the team adopts ASE.
+The installer copies the harness without overwriting any existing file, encapsulates ASE's operational directories inside `.ase/` (`.ase/project-memory/`, `.ase/artifacts/`, `.ase/scripts/`, `.ase/templates/`) while keeping only `.agents/`, `.github/`, and `AGENTS.md` at the root for IDE auto-discovery, and hides every installed path through `.git/info/exclude`. If the repository already has an `AGENTS.md`, it keeps it and installs the ASE rules in `.agents/AGENTS.md` instead. `--upgrade` updates unmodified template files; `--verify-layout` checks `.ase/` encapsulation and detects stray template clones; `--uninstall` removes the files you did not modify; `--versioned` skips the Git exclusion if the team adopts ASE.
 
 Then, in VS Code (Copilot) or Antigravity:
 
@@ -29,7 +29,7 @@ Check that your organization allows AI assistants on that code first.
 2. Open it in VS Code and run `/ase-setup`.
 3. Once the M0 checklist is complete, run `/ase-plan`, then `/ase-task` for each task and `/ase-review` for each Work Package.
 
-New-project setup supports Lite mode with the `vscode` engine. Standard/Enterprise and AI Studio are not implemented. Graphify is optional.
+New-project setup supports Lite mode with the `antigravity` or `vscode` engine. Standard/Enterprise and AI Studio are not implemented. Graphify is optional.
 
 `/ase-setup` asks for the stack and real Fast and Gate commands; it does not install dependencies or invent passing checks. It can prepare a project locally, but M0 also requires GitHub connectivity, an existing `accepted` branch, and successful hosted checks. Branch protection is required where available. If GitHub plan or permissions prevent it, only an explicit HAG-06 approval of the procedural HAG-01 fallback recorded in the M0 checklist can substitute; this accepts that direct pushes and early merges cannot be technically blocked. Creating the initial `accepted` branch, changing GitHub settings, pushing, and starting the hosted smoke workflow require explicit permission. An existing `accepted` branch or protection is never overwritten automatically.
 
@@ -39,15 +39,16 @@ GitHub requires the approving reviewer to be a person with suitable access other
 
 | Path | Content |
 |------|---------|
-| `AGENTS.md` | Global rules for every agent (both harnesses) |
-| `.agents/skills/` | `ase-*` skills (including `/ase-adopt`), read natively by both Copilot and Antigravity; role cards in `ase-roles/references/` |
-| `.agents/agents/`, `.agents/rules/` | Antigravity agents (19, DEC-05 roster + `ase-lead`) and glob rules |
+| `AGENTS.md` | Global rules for every agent (both harnesses, including `Project context`: `work` \| `personal` and external artifact rules) |
+| `.agents/skills/` | `ase-*` skills (`/ase-setup`, `/ase-adopt`, `/ase-plan`, `/ase-task`, `/ase-review`, `/ase-roles`, `/ase-plugin`), read natively by both Copilot and Antigravity; role cards in `ase-roles/references/` |
+| `.agents/agents/`, `.agents/rules/` | Antigravity agents (19, DEC-05 roster + `ase-lead` with `subagent`/`mainAgent` and native tool arrays) and glob rules |
 | `.github/agents/`, `.github/instructions/` | The same agents and rules in Copilot's native format |
-| `install.py` | Installer for existing repositories (local mode) |
+| `install.py` | Installer and upgrader (`--upgrade`, `--verify-layout`, `--flat`, `--versioned`, `--no-git`, `--uninstall`) for existing repositories |
 | `.github/workflows/` | CI: fast checks on `main`, binding gate on PRs to `accepted`, and an explicitly started M0 Gate smoke test |
-| `project-memory/` | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`) |
-| `scripts/` | Deterministic helpers for M0 verification, post-merge `accepted` PR audit, next-ID allocation, task logging and traceability; opt-in `accepted` branch protection |
-| `templates/` | MVP, requirement, Wave, Feature, User Story, task and ADR templates, plus the minimal correction prompt |
+| `project-memory/` (`.ase/project-memory/` when installed) | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`, `state/reviews/`) |
+| `artifacts/` (`.ase/artifacts/` when installed) | Pre-created lifecycle deliverable directories (`01-discovery/`, `02-planning/`, `03-architecture/`, `04-verification/`, `05-release-and-handover/`, `specs/`) |
+| `scripts/` (`.ase/scripts/` when installed) | Deterministic helpers: `verify-m0.py`, `verify-accepted.sh`, `next-id.py`, `append-task-log.py`, `build-traceability.py`, `verify-external-clean.py`, `sync-plugin.py`, `build-stakeholder-pdf.py`, `protect-accepted.sh` |
+| `templates/` (`.ase/templates/` when installed) | MVP, requirement, Wave, Feature, User Story, task, ADR, and `stakeholder-pdf-template.json` templates, plus the minimal correction prompt |
 
 `/ase-setup` configures the project's stack-specific `scripts/ci/fast.sh` and `scripts/ci/gate.sh`. The included GitHub Actions workflows call those commands. The M0 smoke test runs the Gate command on Actions but is not a PR gate. `scripts/protect-accepted.sh --apply` is opt-in and refuses to replace detected existing protection.
 

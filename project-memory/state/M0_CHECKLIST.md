@@ -4,8 +4,8 @@ This is descriptive project state. Leave every item pending until its evidence i
 
 | Check | Status | Evidence |
 |-------|--------|----------|
-| New project, Lite mode, `vscode` engine, and approved stack | PENDING | Not verified |
-| Copilot is usable in the project workspace | PENDING | Not verified |
+| New project, Lite mode, `antigravity` (or `vscode`) engine, and approved stack | PENDING | Not verified |
+| Antigravity (or Copilot) is usable in the project workspace | PENDING | Not verified |
 | Project Memory and task are present; Fast and Gate scripts are approved and pass locally | PENDING | Not verified |
 | GitHub `origin` and `main` are synchronized | PENDING | Not verified |
 | `accepted` exists and is protected, or the procedural HAG-01 fallback is explicitly approved (HAG-06) | PENDING | Not verified |
