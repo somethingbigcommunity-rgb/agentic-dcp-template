@@ -61,7 +61,7 @@ After all criteria pass:
 
    Use an empty `--parent` if the task has no parent. Use the actual project engine (`antigravity` or `vscode`), date, final cycle count, and a concise note. If the helper fails, surface the error and do not claim the log was updated.
 
-7. Update `NEXT_TASK.md` and other descriptive state only when the task provides enough evidence to do so. Do not hand-edit `TRACEABILITY.md`; rebuild it with `scripts/build-traceability.py`.
+7. Update `NEXT_TASK.md` and other descriptive state only when the task provides enough evidence to do so. When completing an inner WBS sequence task (`T-NNNN.1`, `T-NNNN.2`, `T-NNNN.1.1`), advance `NEXT_TASK.md` to the next task in `Queued next in inner sequence`; when the inner sequence is empty, pop the `Return Stack (PAUSED tasks to resume)` in `NEXT_TASK.md` and restore the paused parent task (`T-NNNN`) back to `IN_PROGRESS` (or `TODO`). Do not hand-edit `TRACEABILITY.md`; rebuild it with `scripts/build-traceability.py`.
 8. Report status, files, checks and results, log entry, commit, and any blocker. Stop; do not begin another task.
 
 ## Local Git mode
@@ -70,5 +70,8 @@ When `AGENTS.md` sets `Git mode` to `local`, these rules replace the branch, com
 
 - Work in the current working tree and branch. Do not create or switch branches, commit, push, or open PRs. Require the Human Owner to confirm before starting if the worktree already has unrelated changes, and never discard them.
 - Run the declared `Fast CI command` (not `scripts/ci/fast.sh`) and the focused checks for the change. If it is `none`, record that no automated check exists; do not claim one passed.
-- After the criteria pass, run `build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, and a suggested commit message written in first-person singular (`"I"`, never `"we"`) without ASE IDs (unless the Human Owner wants them). Place any reconciliation or verification outputs in `artifacts/04-verification/` and verify them with `verify-external-clean.py`.
+- After the criteria pass, run `build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, a suggested commit message written in first-person singular (`"I"`, never `"we"`) without ASE IDs in `work`/unversioned mode, and the output of `python3 scripts/git-advisor.py --milestone task --task-id <ID>` (or `.ase/scripts/git-advisor.py`). Place any reconciliation or verification outputs in `artifacts/04-verification/` and verify them with `verify-external-clean.py`.
+- Enforce the `Project context` execution policy from `git-advisor.py`:
+  - **`Project context: personal`**: Offer to execute the proposed `git commit` (and `git push` if a remote is connected) directly for the Human Owner once the diff is accepted (`HAG-01`).
+  - **`Project context: work`**: Present the proposed `git commit` / `git push` commands for the Human Owner to run manually, and **never** execute `git commit`, `git push`, branch, or remote commands yourself.
 - Set the task `DONE` and append the task-log row only after the Human Owner states that the diff is accepted (HAG-01 in local mode). If the human rejects it, count one failed cycle and correct within the budget.

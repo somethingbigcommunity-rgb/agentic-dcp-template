@@ -11,17 +11,17 @@ from dataclasses import dataclass
 from pathlib import Path
 
 ID_PATTERN = re.compile(
-    r"(?<![A-Za-z0-9])(?:REQ-\d{3}|W-\d{2}|F-\d{3}|WP-\d{3}|US-\d{3}|T-\d{4})(?!\d)"
+    r"(?<![A-Za-z0-9])(?:REQ-\d{3}|W-\d{2}|F-\d{3}|WP-\d{3}|US-\d{3}|T-\d{4}(?:\.\d+)*)(?!\d)"
 )
 TEST_ID_PATTERN = re.compile(
     r"(?<![A-Za-z0-9])(?:"
     r"(?P<three>REQ|WP|US|F)[-_](?P<number_three>\d{3})|"
     r"(?P<wave>W)[-_](?P<number_wave>\d{2})|"
-    r"(?P<task>T)[-_](?P<number_task>\d{4})"
+    r"(?P<task>T)[-_](?P<number_task>\d{4}(?:\.\d+)*)"
     r")(?!\d)"
 )
 REQUIREMENT_HEADING = re.compile(r"^#{1,6}\s+(REQ-\d{3})\s+[—-]\s+(.+?)\s*$")
-TASK_COMMIT = re.compile(r"^(T-\d{4}):(?:\s|$)")
+TASK_COMMIT = re.compile(r"^(T-\d{4}(?:\.\d+)*):(?:\s|$)")
 
 
 @dataclass(frozen=True)
@@ -199,7 +199,12 @@ def build_matrix(
             if requirement not in requirements:
                 errors.append(f"{item.identifier} references unknown requirement {requirement}")
     for item in tasks.values():
-        if item.parent and item.parent not in stories and item.parent not in features:
+        if (
+            item.parent
+            and item.parent not in stories
+            and item.parent not in features
+            and item.parent not in tasks
+        ):
             errors.append(f"{item.identifier} has unresolved parent {item.parent}")
 
     tests_dir = tests_dir if tests_dir.is_absolute() else root / tests_dir
@@ -266,10 +271,28 @@ def build_matrix(
         for requirement in feature.requirements:
             features_by_requirement.setdefault(requirement, set()).add(feature.identifier)
 
+    def _resolve_task_ancestors(task_item: Artifact) -> str:
+        visited: set[str] = set()
+        curr_parent = task_item.parent
+        while curr_parent in tasks and curr_parent not in visited:
+            visited.add(curr_parent)
+            curr_parent = tasks[curr_parent].parent
+        if not curr_parent and "." in task_item.identifier:
+            base_id = task_item.identifier.rsplit(".", 1)[0]
+            if base_id in tasks:
+                return _resolve_task_ancestors(tasks[base_id])
+        return curr_parent
+
     tasks_by_parent: dict[str, set[str]] = {}
     for task in tasks.values():
-        if task.parent:
-            tasks_by_parent.setdefault(task.parent, set()).add(task.identifier)
+        ancestor_parent = _resolve_task_ancestors(task)
+        if ancestor_parent:
+            label = (
+                f"{task.identifier} ({task.status})"
+                if task.status in {"PAUSED", "DEFERRED", "SUPERSEDED"}
+                else task.identifier
+            )
+            tasks_by_parent.setdefault(ancestor_parent, set()).add(label)
         if task.status in {"DONE", "IN_REVIEW"} and not no_git and not commit_subjects.get(task.identifier):
             warnings.append(f"{task.identifier} has no matching T-NNNN commit subject")
 
@@ -309,8 +332,8 @@ def build_matrix(
         }
         commits = {
             subject
-            for task in related_tasks
-            for subject in commit_subjects.get(task, [])
+            for task_label in related_tasks
+            for subject in commit_subjects.get(task_label.split(" ", 1)[0], [])
         }
         headers.append(
             "| "
@@ -350,8 +373,8 @@ def build_matrix(
         related_tests = tests_by_id.get(story.identifier, [])
         commits = {
             subject
-            for task in related_tasks
-            for subject in commit_subjects.get(task, [])
+            for task_label in related_tasks
+            for subject in commit_subjects.get(task_label.split(" ", 1)[0], [])
         }
         headers.append(
             "| "

@@ -36,7 +36,7 @@ FORBIDDEN_PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("HAG-01..07", re.compile(r"\bHAG-0[1-7]\b")),
     ("Human Approval Gate", re.compile(r"Human\s+Approval\s+Gate", re.IGNORECASE)),
     ("Iteration Protocol", re.compile(r"Iteration\s+Protocol", re.IGNORECASE)),
-    ("/ase-* command", re.compile(r"(?<![A-Za-z0-9_])/ase-(?:setup|adopt|plan|task|review|roles|plugin)\b")),
+    ("/ase-* command", re.compile(r"(?<![A-Za-z0-9_])/ase-(?:setup|adopt|plan|task|review|roles|plugin|status)\b")),
     ("M0-A", re.compile(r"\bM0-A\b")),
     (".ase-install.json", re.compile(r"\.ase-install\.json\b")),
     ("ase-lead", re.compile(r"\base-lead\b", re.IGNORECASE)),

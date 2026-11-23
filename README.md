@@ -2,7 +2,7 @@
 
 Project template for the **Agentic Software Engineering (ASE) harness**. It contains the Development Context Package (DCP), the Project Memory skeleton and the agentic system (skills, role cards, rules, CI workflows).
 
-> Version: **v0.2.0**. Adds local adoption on existing repositories (`--upgrade`, `--no-git`), the full agent roster with native Antigravity + Copilot parity, proactive ASE-external reusable domain plugins (`/ase-plugin`), optional stakeholder-level executive PDF generation (`work` Sopra Steria Group vs `personal` palettes), and mandatory zero-ASE-footprint verification (`verify-external-clean.py`). See [release notes and validation limits](RELEASE-NOTES.md).
+> Version: **v0.3.0**. Adds proactive remote- and milestone-aware Git proposals (`scripts/git-advisor.py` with `personal` vs `work` execution rules), WBS-style hierarchical sub-task IDs for roadmap interruptions (`T-0008.1`, `T-0008.1.1`) with the `NEXT_TASK.md` Return Stack, and on-demand daily project situation reports (`/ase-status` + `scripts/project-status.py`), on top of encapsulated `.ase/` local adoption (`--upgrade`, `--verify-layout`), the full native Antigravity + Copilot roster, `/ase-plugin`, stakeholder PDFs (`work` Sopra Steria Group vs `personal`), and `verify-external-clean.py`. See [release notes and validation limits](RELEASE-NOTES.md).
 
 ## Use it today on an existing repository (local mode)
 
@@ -40,14 +40,14 @@ GitHub requires the approving reviewer to be a person with suitable access other
 | Path | Content |
 |------|---------|
 | `AGENTS.md` | Global rules for every agent (both harnesses, including `Project context`: `work` \| `personal` and external artifact rules) |
-| `.agents/skills/` | `ase-*` skills (`/ase-setup`, `/ase-adopt`, `/ase-plan`, `/ase-task`, `/ase-review`, `/ase-roles`, `/ase-plugin`), read natively by both Copilot and Antigravity; role cards in `ase-roles/references/` |
+| `.agents/skills/` | `ase-*` skills (`/ase-setup`, `/ase-adopt`, `/ase-plan`, `/ase-task`, `/ase-review`, `/ase-status`, `/ase-roles`, `/ase-plugin`), read natively by both Copilot and Antigravity; role cards in `ase-roles/references/` |
 | `.agents/agents/`, `.agents/rules/` | Antigravity agents (19, DEC-05 roster + `ase-lead` with `subagent`/`mainAgent` and native tool arrays) and glob rules |
 | `.github/agents/`, `.github/instructions/` | The same agents and rules in Copilot's native format |
 | `install.py` | Installer and upgrader (`--upgrade`, `--verify-layout`, `--flat`, `--versioned`, `--no-git`, `--uninstall`) for existing repositories |
 | `.github/workflows/` | CI: fast checks on `main`, binding gate on PRs to `accepted`, and an explicitly started M0 Gate smoke test |
 | `project-memory/` (`.ase/project-memory/` when installed) | DCP (`dcp/`), ADRs (`adr/`) and initialized state (`state/`, `state/reviews/`) |
 | `artifacts/` (`.ase/artifacts/` when installed) | Pre-created lifecycle deliverable directories (`01-discovery/`, `02-planning/`, `03-architecture/`, `04-verification/`, `05-release-and-handover/`, `specs/`) |
-| `scripts/` (`.ase/scripts/` when installed) | Deterministic helpers: `verify-m0.py`, `verify-accepted.sh`, `next-id.py`, `append-task-log.py`, `build-traceability.py`, `verify-external-clean.py`, `sync-plugin.py`, `build-stakeholder-pdf.py`, `protect-accepted.sh` |
+| `scripts/` (`.ase/scripts/` when installed) | Deterministic helpers: `verify-m0.py`, `verify-accepted.sh`, `next-id.py` (including `--under` for WBS `T-NNNN.1`), `append-task-log.py`, `build-traceability.py`, `verify-external-clean.py`, `sync-plugin.py`, `build-stakeholder-pdf.py`, `git-advisor.py`, `project-status.py`, `protect-accepted.sh` |
 | `templates/` (`.ase/templates/` when installed) | MVP, requirement, Wave, Feature, User Story, task, ADR, and `stakeholder-pdf-template.json` templates, plus the minimal correction prompt |
 
 `/ase-setup` configures the project's stack-specific `scripts/ci/fast.sh` and `scripts/ci/gate.sh`. The included GitHub Actions workflows call those commands. The M0 smoke test runs the Gate command on Actions but is not a PR gate. `scripts/protect-accepted.sh --apply` is opt-in and refuses to replace detected existing protection.

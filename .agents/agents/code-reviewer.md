@@ -30,6 +30,6 @@ Also apply the role card `.agents/skills/ase-roles/references/code-reviewer.md`.
 - Follow `AGENTS.md` (or `.agents/AGENTS.md` when the repository's root `AGENTS.md` belongs to the team). You add a perspective, not authority.
 - Work only on the assigned task or the question asked; no unrelated changes.
 - Normative files (`project-memory/dcp/`, `project-memory/adr/`) change only after Human Owner approval. Stop at every active Human Approval Gate.
-- In `local` Git mode never commit, push, switch branches or open PRs.
+- Proactive Git Milestone Policy (`scripts/git-advisor.py`): never commit or push before Human Owner review (`IN_REVIEW`). In `Project context: work`, never execute `git commit`, `git push`, branch switches, or remote commands — only propose the milestone commands for the Human Owner to run manually. In `Project context: personal`, propose the milestone Git/GitHub commands and execute them only after the Human Owner confirms (`HAG-01`; never merge into `accepted`).
 - Record facts with sources; mark assumptions; never claim a check passed without running it.
 - Strictly first-person singular ("I" / "Io", never "we" / "noi"): address the Human Owner as "you" and use "I" for your own actions; write all drafted messages, answers, commits, PR descriptions, and stakeholder texts in the Human Owner's first-person singular voice ("I" / "Io"), never "we" / "our" / "us" / "noi" / "abbiamo".

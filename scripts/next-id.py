@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Print the next unused sequential ASE identifier in a project."""
+"""Print the next unused sequential ASE identifier in a project.
+
+Supports WBS-style hierarchical sub-task IDs (e.g. T-0008.1, T-0008.2, T-0008.1.1)
+when --type task --under <PARENT_TASK_ID> is passed for inserted inner sequences.
+"""
 
 from __future__ import annotations
 
@@ -19,10 +23,17 @@ ID_TYPES = {
     "adr": ("ADR", 3, ("adr",)),
 }
 
+WBS_PARENT_TASK_RE = re.compile(r"^T-\d{4}(?:\.\d+)*$")
+
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--type", required=True, choices=tuple(ID_TYPES))
+    parser.add_argument(
+        "--under",
+        default=None,
+        help="Optional parent task ID (e.g. T-0008 or T-0008.1) to allocate a WBS sub-task ID (T-0008.1, T-0008.1.1).",
+    )
     parser.add_argument(
         "--root",
         type=Path,
@@ -58,10 +69,10 @@ def canonical_files(root: Path, identifier_type: str) -> list[Path]:
 
 def used_ids(root: Path, identifier_type: str) -> set[int]:
     prefix, width, _ = ID_TYPES[identifier_type]
-    identifier = re.compile(rf"{re.escape(prefix)}-(\d{{{width}}})\b")
-    front_matter_id = re.compile(r"^id:\s*([A-Z]+-\d+)\s*$")
+    identifier = re.compile(rf"{re.escape(prefix)}-(\d{{{width}}})(?:\.\d+)*\b")
+    front_matter_id = re.compile(r"^id:\s*([A-Z]+-\d+(?:\.\d+)*)\s*$")
     requirement_heading = re.compile(r"^#{1,6}\s+")
-    task_log_entry = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*(T-\d{4})\s*\|")
+    task_log_entry = re.compile(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|\s*(T-\d{4}(?:\.\d+)*)\s*\|")
     found: set[int] = set()
 
     for path in canonical_files(root, identifier_type):
@@ -91,9 +102,42 @@ def used_ids(root: Path, identifier_type: str) -> set[int]:
     return found
 
 
-def next_id(root: Path, identifier_type: str) -> str:
+def used_wbs_sub_ids(root: Path, parent_task_id: str) -> set[int]:
+    if not WBS_PARENT_TASK_RE.match(parent_task_id):
+        raise ValueError(
+            f"--under must be a valid task ID (e.g. T-0008 or T-0008.1), got: {parent_task_id}"
+        )
+    escaped = re.escape(parent_task_id)
+    child_re = re.compile(rf"^{escaped}\.(\d+)(?:[-.\s]|$)")
+    front_matter_id = re.compile(rf"^id:\s*{escaped}\.(\d+)\s*$")
+    task_log_entry = re.compile(rf"^\|\s*\d{{4}}-\d{{2}}-\d{{2}}\s*\|\s*{escaped}\.(\d+)\s*\|")
+    found: set[int] = set()
+
+    for path in canonical_files(root, "task"):
+        m_name = child_re.match(path.name)
+        if m_name:
+            found.add(int(m_name.group(1)))
+        for line in path.read_text(encoding="utf-8").splitlines():
+            candidate = line.strip()
+            if path.name == "TASK_LOG.md":
+                m_log = task_log_entry.match(candidate)
+                if m_log:
+                    found.add(int(m_log.group(1)))
+                continue
+            m_fm = front_matter_id.match(candidate)
+            if m_fm:
+                found.add(int(m_fm.group(1)))
+    return found
+
+
+def next_id(root: Path, identifier_type: str, under: str | None = None) -> str:
     if not root.is_dir():
         raise ValueError(f"project root is not a directory: {root}")
+    if under is not None:
+        if identifier_type != "task":
+            raise ValueError("--under is only supported with --type task")
+        used_children = used_wbs_sub_ids(root, under)
+        return f"{under}.{max(used_children, default=0) + 1}"
     prefix, width, _ = ID_TYPES[identifier_type]
     used = used_ids(root, identifier_type)
     return f"{prefix}-{max(used, default=0) + 1:0{width}d}"
@@ -102,7 +146,7 @@ def next_id(root: Path, identifier_type: str) -> str:
 def main() -> int:
     args = parse_args()
     try:
-        print(next_id(args.root.resolve(), args.type))
+        print(next_id(args.root.resolve(), args.type, args.under))
     except (OSError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1

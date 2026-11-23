@@ -46,7 +46,7 @@ When installed into a repository via `install.py` (Option 1A default), only the 
 │   ├── 04-verification/         ← P6–P7 reconciliation reports & test/benchmark evidence
 │   ├── 05-release-and-handover/ ← P7–P8 release-report PDFs, PR descriptions & stakeholder messages
 │   └── specs/                   ← JSON specs for build-stakeholder-pdf.py
-├── scripts/     ← deterministic helpers (next-id.py, append-task-log.py, build-traceability.py, etc.)
+├── scripts/     ← deterministic helpers (next-id.py, append-task-log.py, build-traceability.py, git-advisor.py, etc.)
 └── templates/   ← document and PDF templates
 ```
 
@@ -65,15 +65,18 @@ When installed into a repository via `install.py` (Option 1A default), only the 
 - One Work Package is open on `main` at a time; its PR is opened when the WP is complete.
 - Commit messages start with the task ID (`T-0117: ...`). PR titles start with the WP ID (`F-021: Upload PDF`).
 
-### Local Git mode
+### Local Git mode & Proactive Milestone Git Proposals (`scripts/git-advisor.py`)
 
-With `Git mode` `local` (set by `/ase-adopt`), ASE runs on the Human Owner's machine inside a repository whose Git process belongs to someone else (team, company). The ASE files are usually excluded from Git through `.git/info/exclude`.
+With `Git mode` `local` (set by `/ase-adopt`), ASE runs on the Human Owner's machine inside an existing or local repository. The ASE files are encapsulated in `.ase/` and excluded from Git through `.git/info/exclude` unless `--versioned` was chosen.
 
 - `Working branch` is the branch the Human Owner works on; `Accepted branch` is `none`. The team's own branch, PR, review and CI rules apply unchanged.
-- Agents **never commit, push, rebase, switch or create branches, open PRs, or change remote settings**. They leave changes in the working tree; the Human Owner reviews the diff and commits. Read-only Git commands are allowed.
+- **Proactive Milestone Git Advisor (`scripts/git-advisor.py`)**: At every milestone or task checkpoint (`m0`, `plan`, `task`, `review`, `release`), run `python3 scripts/git-advisor.py --milestone <m0|plan|task|review|release>` (or `.ase/scripts/git-advisor.py`) to inspect whether a GitHub remote is connected (`no-remote` vs `github-remote`), branch ahead/behind status, and `.ase-install.json` versioned state, and include its **Git Milestone Proposal** in the report.
+- **Strict `work` vs `personal` Execution Policy**:
+  - **`Project context: work`**: Agents **never execute** `git commit`, `git push`, `git rebase`, branch creation/switching, PR creation, or remote settings changes. They leave changes in the working tree and present the milestone-appropriate Git commands (with zero-ASE-footprint and first-person singular `"I"` commit/PR messages) for the Human Owner to run manually.
+  - **`Project context: personal`**: Agents never commit or push *before* presenting the diff (`IN_REVIEW`). At the milestone/task report, agents present the `git-advisor.py` commands (`git commit`, `git push`, `gh repo create`, `gh pr create`, `git tag`, `gh release create` according to remote connectivity and milestone) and explicitly offer to execute them directly once the Human Owner confirms (`HAG-01`). Even in `personal` mode, **no agent ever merges into `accepted`**.
 - `Fast CI command` and `Gate CI command` are the repository's existing commands (for example `npm test`, `mvn -q verify`), recorded by `/ase-adopt`. If a command is `none`, say so; never claim a check passed.
 - A task becomes `DONE` when its criteria have evidence, the declared Fast command passes locally, and the Human Owner accepts the diff (HAG-01 in local mode). Until then it stays `IN_REVIEW`.
-- Never put ASE IDs, Project Memory content or internal notes into code, commit messages or PRs unless the Human Owner asks.
+- Never put ASE IDs, Project Memory content or internal notes into code, commit messages or PRs in `work` or unversioned repositories unless the Human Owner asks.
 - Sections about `main`, `accepted`, task branches and hosted workflows apply only to `remote` mode.
 
 ## 4. Work hierarchy and IDs
@@ -83,11 +86,11 @@ Project → Wave → Feature → User Story → Task. Every Work Package (usuall
 | Type | Format | Type | Format |
 |------|--------|------|--------|
 | Requirement | `REQ-NNN` | User Story | `US-NNN` |
-| Wave | `W-NN` | Task | `T-NNNN` |
+| Wave | `W-NN` | Task | `T-NNNN` (or WBS `T-NNNN.1`, `T-NNNN.1.1` for inserted inner sequences) |
 | Feature | `F-NNN` | ADR | `ADR-NNN` |
 | Other WP | `WP-NNN` | Defect | `BUG-NNN` |
 
-IDs are flat, stable, sequential per type and never reused. Hierarchy lives in the `parent` front matter field, external keys in `external`. Test names cite the `US-NNN` or `REQ-NNN` they verify.
+IDs are flat, stable, sequential per type and never reused. When an interruption or discovery mid-roadmap requires inserting an inner sequence of prerequisite tasks inside or ahead of an existing task (e.g. `T-0008`), allocate WBS dotted sub-task IDs via `python3 scripts/next-id.py --type task --under T-0008` (`T-0008.1`, `T-0008.2`, `T-0008.1.1`) so later insertions are immediately recognizable. Hierarchy lives in the `parent` front matter field, external keys in `external`. Test names cite the `US-NNN` or `REQ-NNN` they verify.
 
 For persistent application records, do not reuse identifiers while stale references could still target a replacement record. Prefer UUIDs or a database-supported non-reusing key (for SQLite integer keys, `INTEGER PRIMARY KEY AUTOINCREMENT`); test that a stale delete/update cannot affect a later record after deletion or clear-all.
 
@@ -96,9 +99,9 @@ For persistent application records, do not reuse identifiers while stale referen
 - Execute **one task at a time** with the Iteration Protocol (`dcp/04-implementation/iteration-protocol.md`): input, pre-implementation, planning, implementation, verification, reporting, state update, stop.
 - Implement only the assigned task. No unrelated changes, no future tasks.
 - **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. There are no exceptions, commands included: each run of `/ase-setup` or `/ase-plan` first opens its own task file (e.g. `T-0001: P0 setup`, `T-0012: plan W-02`), writes only within that task and logs it in `TASK_LOG.md` when closed. Creating a task file in `TODO` is how a task starts, so it is not a change outside a task. Read-only questions and analysis need no task.
-- Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED`.
+- Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED` / `PAUSED` (suspended on the Return Stack in `state/NEXT_TASK.md` while an inner WBS sequence `T-NNNN.1` runs) / `DEFERRED` (postponed to a later Wave) / `SUPERSEDED` (retired by a roadmap pivot).
 - Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides. In a local-only project without CI automation, a passing declared Fast CI command on `main` is the local gate evidence required for `DONE`; never describe it as hosted CI.
-- On `DONE` or `BLOCKED`, append one line to `state/TASK_LOG.md`.
+- On `DONE`, `BLOCKED`, `PAUSED`, `DEFERRED`, or `SUPERSEDED`, append one line to `state/TASK_LOG.md`.
 - If the task conflicts with an ADR or the architecture, stop and report: do not decide alone.
 
 ## 6. Risk class
@@ -136,6 +139,7 @@ When an active gate applies, stop and ask; record approved architectural decisio
 | `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog; assign the first ready task in `NEXT_TASK.md` |
 | `/ase-task` | Run the next task with the Iteration Protocol |
 | `/ase-review` | Preliminary check, traceability matrix, PR of the WP to `accepted` with DoD evidence (`remote`), or a review report and PR description draft for the human (`local`) |
+| `/ase-status` | Read-only daily project situation report (`scripts/project-status.py`): roadmap position, WBS inner sequence & Return Stack, daily delta, critical insights, Next Steps paragraph, `"I"` standup snippet, and optional report/PDF proposal |
 | `/ase-plugin` | Scaffold, validate, and sync project-derived reusable domain plugins (`plugins/<slug>/`) with zero ASE dependency |
 
 The full agent roster (DEC-05) is installed natively for both harnesses: `.github/agents/*.agent.md` for GitHub Copilot and `.agents/agents/*.md` for Antigravity. Start from `ASE Lead`; it delegates to specialists only when the task needs them. Skills live in `.agents/skills/` (read natively by both); file-scoped rules are in `.github/instructions/` (Copilot) and `.agents/rules/` (Antigravity). Agents follow this file; they do not add authority.

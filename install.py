@@ -38,6 +38,8 @@ INCLUDE = [
     "scripts/verify-external-clean.py",
     "scripts/sync-plugin.py",
     "scripts/build-stakeholder-pdf.py",
+    "scripts/git-advisor.py",
+    "scripts/project-status.py",
 ]
 ENCAPSULATED_PREFIX = ".ase"
 ENCAPSULATED_ROOTS = ("project-memory", "artifacts", "templates", "scripts")

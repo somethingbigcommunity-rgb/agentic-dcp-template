@@ -61,6 +61,7 @@ After explicit approval:
 6. Stop after reporting the plan and the next assigned implementation task, and proactively offer two optional follow-ups when relevant:
    - **Optional Stakeholder PDF (`project-plan` / `architecture-dossier`):** Offer to generate a stakeholder-level executive PDF (`build-stakeholder-pdf.py` from `templates/stakeholder-pdf-template.json`, saving the spec in `artifacts/specs/` and the PDF in `artifacts/02-planning/` or `artifacts/03-architecture/`, using `context_profile: "work"` with Sopra Steria Group palette/metadata or `"personal"` with a project-suited palette, verified clean via `verify-external-clean.py`).
    - **Proactive Reusable Domain Plugin (`/ase-plugin`):** If 2 or more planned Features/Waves share domain-specific guardrails or deterministic validation scripts that are reusable across similar projects, propose packaging them into an ASE-external plugin under `plugins/<slug>/` (HAG-02).
+   - **Git Milestone Proposal (`plan`):** Run `python3 scripts/git-advisor.py --milestone plan --task-id <ID>` (or `.ase/scripts/git-advisor.py`) and include the milestone Git proposal based on remote connectivity (`no-remote` vs `github-remote`), `.ase-install.json` versioned state, and `Project context` (`personal`: offer to execute upon confirmation; `work`: provide commands for manual execution only).
    Do not run `/ase-task`.
 
 ## Identifier helper
@@ -74,10 +75,24 @@ python3 scripts/next-id.py --type feature
 python3 scripts/next-id.py --type work-package
 python3 scripts/next-id.py --type user-story
 python3 scripts/next-id.py --type task
+python3 scripts/next-id.py --type task --under T-0008      # WBS sub-task T-0008.1, T-0008.2
+python3 scripts/next-id.py --type task --under T-0008.1    # Nested WBS sub-task T-0008.1.1
 python3 scripts/next-id.py --type adr
 ```
 
 The helper scans only canonical artifact locations and the append-only task log. If it fails, surface the error and do not guess an ID.
+
+## Roadmap Interruptions (`WBS T-NNNN.1` & Return Stack) and Pivots
+
+When mid-project findings, urgent defects, or pivots interrupt the planned roadmap, use one of these two structured patterns (after Human Owner approval):
+
+1. **Task Interruption & Return Stack (`PAUSED` in `NEXT_TASK.md` — covers both Inner Micro-Sequences and Urgent Hotfixes):**
+   - Mechanically, an **Inner Micro-Sequence (Detour)** and an **Urgent Hotfix** use the **exact same pause-and-resume mechanism**: set the interrupted task (e.g. `T-0008`) to `status: PAUSED`, place `T-0008` on the `Return Stack (PAUSED tasks to resume)` in `state/NEXT_TASK.md`, queue the 1..N interrupting tasks in `NEXT_TASK.md`, and automatically pop `T-0008` from the Return Stack when the interruption finishes.
+   - Choose the ID and `parent` based only on **whether the interruption belongs to the paused task's scope**:
+     - **In-scope detour or fix (`WBS T-0008.1`, `T-0008.2`, `T-0008.1.1`):** When the inserted steps or bug fix are needed to complete `T-0008` itself (or its User Story/Feature), allocate WBS dotted IDs with `python3 scripts/next-id.py --type task --under T-0008` (`parent: T-0008`, optionally setting `external: BUG-NNN`) so it is immediately clear those steps were inserted later inside `T-0008`.
+     - **Out-of-scope urgent hotfix (`BUG-NNN` + `T-NNNN`):** Only when an urgent defect belongs to a *different, unrelated* Feature/Wave (where rolling it under `T-0008` would pollute `T-0008`'s Feature traceability), allocate a top-level task `T-NNNN` with `parent` set to the affected Feature/Story (and `external: BUG-NNN`) while still pausing `T-0008` on the Return Stack.
+2. **Roadmap Pivot (`Pivot / Re-scope`):**
+   - Never delete or renumber existing IDs. Mark obsolete tasks/stories/features as `status: SUPERSEDED` (adding `superseded_by: <ID or ADR-NNN>`) or `status: DEFERRED` (adding `deferred_to: <W-NN>`), log terminal transitions in `state/TASK_LOG.md`, record an `ADR-NNN` if architecture changed (`HAG-02`), and insert the new replacement items.
 
 ## Local Git mode
 
