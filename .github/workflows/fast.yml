@@ -17,7 +17,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           persist-credentials: false
+      - name: Run template self-check (agentic-dcp-template repository only)
+        if: github.repository == 'somethingbigcommunity-rgb/agentic-dcp-template' && hashFiles('scripts/ci/fast.sh') == ''
+        run: |
+          python3 -m py_compile install.py scripts/*.py
+          bash -n scripts/*.sh
       - name: Require project fast check
+        if: github.repository != 'somethingbigcommunity-rgb/agentic-dcp-template' || hashFiles('scripts/ci/fast.sh') != ''
         run: test -f scripts/ci/fast.sh
       - name: Run project fast check
+        if: github.repository != 'somethingbigcommunity-rgb/agentic-dcp-template' || hashFiles('scripts/ci/fast.sh') != ''
         run: bash scripts/ci/fast.sh

@@ -9,8 +9,9 @@ description: Execute exactly one assigned ASE task with the Iteration Protocol, 
 
 Execute one assigned task and stop. Follow `AGENTS.md` and the Iteration Protocol in `project-memory/dcp/04-implementation/iteration-protocol.md`. Do not improvise if a required project command, script, or skill is missing.
 
-## 1. Select and validate the task
+## 1. Check prerequisites, select, and validate the task
 
+0. Run `python3 scripts/check-prereq.py --command ase-task` (or `.ase/scripts/check-prereq.py --command ase-task`). If it exits with `1` (because `M0`/`M0-A` is incomplete, no task is assigned in `NEXT_TASK.md`, or the assigned task is `BLOCKED`), stop immediately and remind the Human Owner which prerequisite command (`/ase-adopt`, `/ase-setup`, or `/ase-plan`) to run first.
 1. Read `AGENTS.md`, `project-memory/state/NEXT_TASK.md`, and the referenced task file. An explicit task ID supplied by the human takes precedence over `NEXT_TASK.md`.
 2. Execute no more than one task per invocation. If no task is assigned, the task file is missing, required fields or verifiable criteria are absent, or its status is `DONE` or `BLOCKED`, make no implementation changes; explain the blocker. An `IN_REVIEW` task may be resumed only to address identified review or CI findings; if none are pending, report that it is awaiting the gate and stop.
 3. Check applicable HAGs, dependencies, DCP sections, and ADRs before proceeding. Stop for human approval where required.
@@ -70,7 +71,7 @@ When `AGENTS.md` sets `Git mode` to `local`, these rules replace the branch, com
 
 - Work in the current working tree and branch. Do not create or switch branches, commit, push, or open PRs. Require the Human Owner to confirm before starting if the worktree already has unrelated changes, and never discard them.
 - Run the declared `Fast CI command` (not `scripts/ci/fast.sh`) and the focused checks for the change. If it is `none`, record that no automated check exists; do not claim one passed.
-- After the criteria pass, run `build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, a suggested commit message written in first-person singular (`"I"`, never `"we"`) without ASE IDs in `work`/unversioned mode, and the output of `python3 scripts/git-advisor.py --milestone task --task-id <ID>` (or `.ase/scripts/git-advisor.py`). Place any reconciliation or verification outputs in `artifacts/04-verification/` and verify them with `verify-external-clean.py`.
+- After the criteria pass, run `build-traceability.py --mode lite`, set the task `IN_REVIEW`, and show the Human Owner `git status --short`, a summary of `git diff`, a suggested commit message written in first-person singular (`"I"`, never `"we"`) without ASE IDs in `work`/unversioned mode, and the output of `python3 scripts/git-advisor.py --milestone task --task-id <ID>` (or `.ase/scripts/git-advisor.py`). Place any reconciliation or verification outputs in `deliverables/04-verification/` and verify them with `verify-external-clean.py`.
 - Enforce the `Project context` execution policy from `git-advisor.py`:
   - **`Project context: personal`**: Offer to execute the proposed `git commit` (and `git push` if a remote is connected) directly for the Human Owner once the diff is accepted (`HAG-01`).
   - **`Project context: work`**: Present the proposed `git commit` / `git push` commands for the Human Owner to run manually, and **never** execute `git commit`, `git push`, branch, or remote commands yourself.

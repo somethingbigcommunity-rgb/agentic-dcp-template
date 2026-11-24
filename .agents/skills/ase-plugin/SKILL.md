@@ -21,8 +21,9 @@ During `/ase-setup` (P0), `/ase-adopt` (P0-A), `/ase-plan` (P1–P4), or `/ase-r
 
 Always ask the Human Owner for confirmation before creating `plugins/<plugin-slug>/` and record the architectural decision in `project-memory/adr/` (HAG-02).
 
-## 2. Scaffold and Author the Plugin
+## 2. Check Prerequisites, Scaffold, and Author the Plugin
 
+0. Run `python3 scripts/check-prereq.py --command ase-plugin` (or `.ase/scripts/check-prereq.py --command ase-plugin`). If it exits with `1` (because `M0`/`M0-A` is incomplete), stop and remind the Human Owner to run `/ase-adopt` or `/ase-setup` first.
 1. Open or work within an assigned task (`T-NNNN`) as required by `AGENTS.md`.
 2. Run the deterministic helper to scaffold `plugins/<plugin-slug>/`:
 

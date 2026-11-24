@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """Install the ASE harness into an existing Git repository without overwriting files.
 
-Default layout (Option 1A — Encapsulated `.ase/` + Root IDE Hooks):
-  - Root IDE discovery hooks: `.agents/`, `.github/agents/`, `.github/instructions/`, `AGENTS.md` (or `.agents/AGENTS.md`)
-  - Encapsulated ASE workspace: `.ase/project-memory/`, `.ase/artifacts/`, `.ase/scripts/`, `.ase/templates/`
+Default layout (3-Zone Workspace — ADR-004):
+  - Zone 1 (Project Files): repository source code, tests, and docs at root
+  - Zone 2 (Stakeholder Deliverables at root): `deliverables/01-discovery/` .. `05-release-and-handover/`
+  - Zone 3 (Hidden Internal ASE Harness): `.ase/{project-memory,specs,scripts,templates}/`, `.agents/`, `.github/agents/`, `.github/instructions/`
+  - IDE Explorer Cleanup: `.vscode/settings.json` (`files.exclude`) hides Zone 3 paths by default
 
 Usage:
-  python3 install.py /path/to/repo                  # encapsulated .ase/ layout (default), excluded from Git
+  python3 install.py /path/to/repo                  # encapsulated .ase/ layout + root deliverables/ + .vscode/settings.json
   python3 install.py /path/to/repo --flat           # legacy flat root layout
   python3 install.py /path/to/repo --upgrade        # upgrade unmodified ASE files
   python3 install.py /path/to/repo --verify-layout  # check .ase/ encapsulation and detect stray template clones
+  python3 install.py /path/to/repo --show-harness   # unhide internal ASE folders in .vscode/settings.json
+  python3 install.py /path/to/repo --hide-harness   # hide internal ASE folders in .vscode/settings.json
   python3 install.py /path/to/repo --versioned
   python3 install.py /path/to/repo --dry-run
   python3 install.py /path/to/repo --uninstall      # removes unchanged installed files
@@ -22,6 +26,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 SOURCE = Path(__file__).resolve().parent
 INCLUDE = [
@@ -30,7 +35,8 @@ INCLUDE = [
     ".github/agents",
     ".github/instructions",
     "project-memory",
-    "artifacts",
+    "deliverables",
+    "specs",
     "templates",
     "scripts/next-id.py",
     "scripts/append-task-log.py",
@@ -40,13 +46,17 @@ INCLUDE = [
     "scripts/build-stakeholder-pdf.py",
     "scripts/git-advisor.py",
     "scripts/project-status.py",
+    "scripts/check-prereq.py",
+    "scripts/pack-workspace.py",
+    "scripts/export-handover.py",
 ]
 ENCAPSULATED_PREFIX = ".ase"
-ENCAPSULATED_ROOTS = ("project-memory", "artifacts", "templates", "scripts")
+ENCAPSULATED_ROOTS = ("project-memory", "specs", "templates", "scripts")
 MANIFEST = ".agents/.ase-install.json"
 FALLBACK_RULES = ".agents/AGENTS.md"
 POINTER = ".github/instructions/ase.instructions.md"
 AGY_POINTER = ".agents/rules/ase.md"
+VSCODE_SETTINGS = ".vscode/settings.json"
 BEGIN = "# >>> ASE harness (local) >>>"
 END = "# <<< ASE harness (local) <<<"
 POINTER_TEXT = """---
@@ -85,6 +95,52 @@ def map_dest_rel(rel: Path, encapsulated: bool) -> str:
     if encapsulated and rel.parts and rel.parts[0] in ENCAPSULATED_ROOTS:
         return f"{ENCAPSULATED_PREFIX}/{posix}"
     return posix
+
+
+def configure_vscode_excludes(
+    root: Path,
+    installed: dict[str, str],
+    encapsulated: bool,
+    hide: bool = True,
+) -> bool:
+    """Update .vscode/settings.json files.exclude to hide/show internal ASE folders.
+    Returns True if .vscode/settings.json was newly created by ASE.
+    """
+    settings_path = root / VSCODE_SETTINGS
+    created_by_ase = not settings_path.exists()
+    data: dict[str, Any] = {}
+    if settings_path.is_file():
+        try:
+            data = json.loads(settings_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            data = {}
+
+    excludes: dict[str, bool] = dict(data.get("files.exclude", {}))
+    keys = [
+        ".ase",
+        ".agents",
+        ".github/agents",
+        ".github/instructions",
+        ".vscode",
+        ".venv",
+        ".mcp.json",
+        "graphify-out",
+    ]
+    if "AGENTS.md" in installed:
+        keys.append("AGENTS.md")
+    if not encapsulated:
+        keys.extend(["project-memory", "specs", "templates", "scripts"])
+
+    for k in keys:
+        if hide:
+            excludes[k] = True
+        else:
+            excludes.pop(k, None)
+
+    data["files.exclude"] = excludes
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return created_by_ase
 
 
 def git_root(target: Path, allow_no_git: bool = False) -> tuple[Path, bool]:
@@ -138,7 +194,6 @@ def verify_layout(root: Path) -> int:
     if not has_encapsulated and not has_flat:
         errors.append("missing Project Memory (.ase/project-memory/ or project-memory/)")
 
-    # Detect stray template clones inside the workspace (excluding .ase/template and implementazione/dcp-template)
     for cand in root.rglob("install.py"):
         rel = cand.relative_to(root).as_posix()
         if rel in ("install.py", ".ase/template/install.py", "implementazione/dcp-template/install.py"):
@@ -154,7 +209,7 @@ def verify_layout(root: Path) -> int:
             print(f"FAIL: {err}", file=sys.stderr)
         return 1
 
-    layout_mode = "encapsulated (.ase/)" if has_encapsulated else "flat (root)"
+    layout_mode = "encapsulated (.ase/ + deliverables/)" if has_encapsulated else "flat (root)"
     print(f"PASS: verified ASE workspace layout ({layout_mode}) at {root}")
     return 0
 
@@ -166,6 +221,7 @@ def install(
     has_git: bool = True,
     upgrade: bool = False,
     encapsulated: bool = True,
+    hide_harness: bool = True,
 ) -> int:
     manifest_path = root / MANIFEST
     previous = json.loads(manifest_path.read_text()) if manifest_path.exists() else {"files": {}}
@@ -228,6 +284,11 @@ def install(
     if dry_run:
         print("dry run: nothing written")
         return 0
+
+    created_vscode = configure_vscode_excludes(root, installed, encapsulated, hide=hide_harness)
+    if created_vscode or VSCODE_SETTINGS in installed:
+        installed[VSCODE_SETTINGS] = digest(root / VSCODE_SETTINGS)
+
     installed[MANIFEST] = ""
     manifest_path.parent.mkdir(parents=True, exist_ok=True)
     manifest_path.write_text(
@@ -235,6 +296,7 @@ def install(
     )
     if not versioned and has_git:
         exclude_entries = ["/" + p for p in installed]
+        exclude_entries.extend(["/deliverables/", "/handover/"])
         if encapsulated:
             exclude_entries.append(f"/{ENCAPSULATED_PREFIX}/")
         if write_exclude(root, exclude_entries):
@@ -275,10 +337,12 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("target", type=Path)
     parser.add_argument("--versioned", action="store_true", help="do not exclude ASE files from Git")
-    parser.add_argument("--flat", action="store_true", help="install project-memory, artifacts, scripts, templates at root instead of .ase/")
+    parser.add_argument("--flat", action="store_true", help="install project-memory, specs, scripts, templates at root instead of .ase/")
     parser.add_argument("--no-git", action="store_true", help="allow installing into a directory that is not yet a Git repo")
     parser.add_argument("--upgrade", action="store_true", help="upgrade unmodified ASE files to the latest template version")
     parser.add_argument("--verify-layout", action="store_true", help="verify .ase/ encapsulation and check for stray template clones")
+    parser.add_argument("--show-harness", action="store_true", help="unhide internal ASE folders in .vscode/settings.json")
+    parser.add_argument("--hide-harness", action="store_true", help="hide internal ASE folders in .vscode/settings.json (default)")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--uninstall", action="store_true")
     args = parser.parse_args()
@@ -287,10 +351,30 @@ def main() -> int:
         sys.exit("error: target is the ASE template itself")
     if args.verify_layout:
         return verify_layout(root)
+    if args.show_harness or args.hide_harness:
+        manifest_path = root / MANIFEST
+        prev = json.loads(manifest_path.read_text()) if manifest_path.exists() else {"files": {}, "encapsulated": True}
+        configure_vscode_excludes(
+            root,
+            prev.get("files", {}),
+            bool(prev.get("encapsulated", True)),
+            hide=not args.show_harness,
+        )
+        state = "visible" if args.show_harness else "hidden"
+        print(f"Updated {root / VSCODE_SETTINGS}: internal ASE folders are now {state} in the Explorer sidebar.")
+        return 0
     return (
         uninstall(root, has_git)
         if args.uninstall
-        else install(root, args.versioned, args.dry_run, has_git, args.upgrade, encapsulated=not args.flat)
+        else install(
+            root,
+            args.versioned,
+            args.dry_run,
+            has_git,
+            args.upgrade,
+            encapsulated=not args.flat,
+            hide_harness=not args.show_harness,
+        )
     )
 
 

@@ -11,10 +11,11 @@ Prepare ASE Lite in `local` Git mode on a repository that already exists (or tha
 
 Never commit, push, create or switch branches, open PRs, install dependencies, or change CI, remote settings or application code. Do not read or record secrets (`.env`, credentials, tokens, private keys); describe them only as "configuration present".
 
-## 1. Check the starting point and verify `.ase/` encapsulation
+## 1. Check prerequisites, starting point, and `.ase/` encapsulation
 
+0. Run `python3 .ase/scripts/check-prereq.py --command ase-adopt` (or `scripts/check-prereq.py --command ase-adopt`). If it exits with `1` (because `M0 | PASS` is already active in `remote` mode), stop and remind the Human Owner to run `/ase-plan`.
 1. **Verify `.ase/` encapsulation and check for stray template clones before proceeding:**
-   - Confirm that the workspace uses the encapsulated `.ase/` layout (`.ase/project-memory/`, `.ase/artifacts/`, `.ase/scripts/`, `.ase/templates/`) with only `.agents/`, `.github/`, and `AGENTS.md` at the repository root (run `python3 <template>/install.py . --verify-layout` if available, or check the folders directly).
+   - Confirm that the workspace uses the encapsulated `.ase/` layout (`.ase/project-memory/`, `.ase/specs/`, `.ase/scripts/`, `.ase/templates/`) with visible `deliverables/` and IDE hooks (`.agents/`, `.github/`, `AGENTS.md`, `.vscode/settings.json`) at the repository root (run `python3 <template>/install.py . --verify-layout` if available, or check the folders directly).
    - Check whether a raw clone of `agentic-dcp-template` (e.g., `ase-tool/agentic-dcp-template/` or `agentic-dcp-template/`) is sitting inside the project workspace outside `.ase/template/`. If found, stop and warn the Human Owner so it can be moved into `.ase/template/` or outside the project workspace and excluded from Git before proceeding.
 2. Read `AGENTS.md`, `.ase/project-memory/state/PROJECT_STATE.md` (or `project-memory/state/PROJECT_STATE.md` in `--flat` mode) and existing adoption tasks in `dcp/04-implementation/tasks/`.
 3. If `PROJECT_STATE.md` already records `M0-A | PASS` and no update was requested, report the baseline read-only and stop.
@@ -60,7 +61,7 @@ Report the configuration, files written, Fast result, known issues, and how to c
 - a larger feature → `/ase-plan` with the feature description;
 - before the team PR → `/ase-review` in local mode for a review report and PR draft;
 - **proactive plugin proposal (if applicable):** if discovery revealed domain-specific guardrails, multi-tool conventions, or reusable verification scripts that could benefit similar projects, proactively ask whether the Human Owner wants to package them into an ASE-external plugin via `/ase-plugin` (`plugins/<slug>/`);
-- **optional stakeholder PDF proposal:** ask whether the Human Owner wants to generate an optional stakeholder-level **As-Is Discovery & Architecture Baseline PDF** (`doc_type: "as-is-report"`, saved to `.ase/artifacts/01-discovery/` with its spec in `.ase/artifacts/specs/`, using the configured `work` Sopra Steria Group profile or `personal` project-suited profile) via `build-stakeholder-pdf.py`;
+- **optional stakeholder PDF proposal:** ask whether the Human Owner wants to generate an optional stakeholder-level **As-Is Discovery & Architecture Baseline PDF** (`doc_type: "as-is-report"`, saved to `deliverables/01-discovery/` with its spec in `.ase/specs/`, using the configured `work` Sopra Steria Group profile or `personal` project-suited profile) via `build-stakeholder-pdf.py`;
 - **Git Milestone Proposal (`m0`):** run `python3 .ase/scripts/git-advisor.py --milestone m0 --task-id <ID>` (or `scripts/git-advisor.py`) and present the milestone Git recommendation based on whether a GitHub remote is connected (`no-remote` vs `github-remote`) and `Project context` (`personal`: offer to execute the proposed Git/GitHub commands upon confirmation; `work`: present the commands for manual execution only, never executing Git mutations as an agent).
 
 Stop; do not start product work.

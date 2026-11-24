@@ -11,8 +11,9 @@ Prepare one **new** project from this template. This version supports `Lite` mod
 
 Follow `AGENTS.md`. Never merge into, reset, force-push, delete, or overwrite `accepted`. Do not create a remote repository, push, create a remote branch, change GitHub settings, or start a hosted workflow without explicit Human Owner authorization for those actions. Do not ask for or record credentials.
 
-## 1. Check scope and collect the inputs
+## 1. Check prerequisites, scope, and inputs
 
+0. Run `python3 scripts/check-prereq.py --command ase-setup` (or `.ase/scripts/check-prereq.py --command ase-setup`). If it exits with `1` (because `M0-A | PASS` is already active in `local` mode), stop and remind the Human Owner to run `/ase-plan` or `/ase-status`.
 1. Read `AGENTS.md`, `project-memory/state/PROJECT_STATE.md`, `M0_CHECKLIST.md`, `NEXT_TASK.md`, existing setup tasks, and relevant project files. Use the project root as the only workspace. Do not change files outside it.
 2. If M0 is already `PASS` and no change was requested, report the existing result read-only; do not repeat bootstrap. A later configuration change needs a new task and the normal PR to `accepted`.
 3. If this is an existing application or a repository whose Git process belongs to a team, stop before changes and use `/ase-adopt` (`local` Git mode). If the requested mode or engine is unsupported, stop and explain that the option is not implemented. Do not treat a repository with an existing application as a new template project.

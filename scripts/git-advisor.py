@@ -148,7 +148,7 @@ def inspect_and_advise(
         versioned = True
         encapsulated = (repo / ".ase" / "project-memory").is_dir()
 
-    artifacts_prefix = ".ase/artifacts" if encapsulated else "artifacts"
+    artifacts_prefix = "deliverables"
 
     inside_git = _run_git(repo, ["rev-parse", "--is-inside-work-tree"])
     is_git_repo = inside_git.returncode == 0 and inside_git.stdout.strip() == "true"

@@ -9,12 +9,13 @@ description: Generate a read-only daily project situation report covering roadma
 
 Produce an on-demand daily operational pulse for multi-week projects. Because `/ase-status` is read-only by default, it requires **no task file** (`AGENTS.md` §5). Never write or generate report files automatically unless the Human Owner explicitly confirms your proposal.
 
-## 1. Run the deterministic status helper
+## 1. Run the prerequisite and status helpers
 
 Run from the repository root:
 
 ```sh
-python3 scripts/project-status.py          # or python3 .ase/scripts/project-status.py
+python3 scripts/check-prereq.py --command ase-status   # or python3 .ase/scripts/check-prereq.py --command ase-status
+python3 scripts/project-status.py                      # or python3 .ase/scripts/project-status.py
 ```
 
 Also run `python3 scripts/git-advisor.py --milestone task` (or `.ase/scripts/git-advisor.py`) if you need remote/branch details.
@@ -42,7 +43,7 @@ Present the report concisely in chat, covering:
 
 At the end of your response, **propose** (ask the Human Owner) whether to persist the report:
 
-- **Option A — Markdown snapshot:** Save to `.ase/artifacts/04-verification/status-YYYY-MM-DD.md` (or `artifacts/04-verification/status-YYYY-MM-DD.md`) via `python3 scripts/project-status.py --write-report <path>` and verify with `python3 scripts/verify-external-clean.py --check-first-person <path>`.
+- **Option A — Markdown snapshot:** Save to `deliverables/04-verification/status-YYYY-MM-DD.md` via `python3 scripts/project-status.py --write-report deliverables/04-verification/status-YYYY-MM-DD.md` and verify with `python3 scripts/verify-external-clean.py --check-first-person deliverables/04-verification/status-YYYY-MM-DD.md`.
 - **Option B — Executive Stakeholder PDF:** Generate a stakeholder-level status PDF via `python3 scripts/build-stakeholder-pdf.py` (using the repository's configured `work` Sopra Steria Group palette or `personal` palette) and verify with `python3 scripts/verify-external-clean.py`.
 
 Do **not** create either file until the Human Owner says yes.

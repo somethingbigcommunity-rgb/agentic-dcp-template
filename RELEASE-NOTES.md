@@ -1,4 +1,13 @@
-# ASE v0.3.0
+# ASE v0.4.0
+
+## v0.4.0 — 2026-11-24
+
+Goal: non-overlapping command responsibilities with deterministic Step 0 prerequisite enforcement (`scripts/check-prereq.py`), 3-Zone Workspace separation (visible root `deliverables/` + hidden `.ase/specs/` + automatic `.vscode/settings.json` `files.exclude` Explorer cleanup), in-place post-work deliverable curation (`/ase-pack`), and one-click external stakeholder `.zip` handover export (`/ase-export`).
+
+- **Deterministic Command Prerequisite Guard (`scripts/check-prereq.py`, ADR-004)**: enforced as Step 0 of all 9 `/ase-*` commands; blocks out-of-order invocations (such as `/ase-export` before `/ase-pack`, or `/ase-review` / `/ase-pack` while a task is `IN_PROGRESS` or `PAUSED` on the Return Stack) and tells the Human Owner which command to run first.
+- **3-Zone Workspace Layout & Automatic IDE Explorer Cleanup (`deliverables/` + `.vscode/settings.json`, ADR-004)**: stakeholder deliverables (`01-discovery/` .. `05-release-and-handover/`) live visibly in `deliverables/` at the repository root while internal PDF JSON specs move to `.ase/specs/`, and `install.py` configures `.vscode/settings.json` (`files.exclude`) to hide internal ASE folders from the Explorer sidebar (`--show-harness` / `--hide-harness`).
+- **In-Place Post-Work Curation (`/ase-pack` & `scripts/pack-workspace.py`, ADR-004)**: curates `deliverables/`, generates `deliverables/INDEX.md` in first-person singular (`"I"`), hides empty `01..05` folders in `.vscode/settings.json`, verifies zero-ASE-footprint, records `state/PACK_STATE.json`, and offers `/ase-export`.
+- **One-Click Stakeholder Handover Bundle (`/ase-export` & `scripts/export-handover.py`, ADR-004)**: requires a fresh `/ase-pack` and bundles clean `project-files/` + `deliverables/` into `handover/<project>-handover-YYYY-MM-DD/` and `.zip`.
 
 ## v0.3.0 — 2026-11-23
 

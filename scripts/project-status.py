@@ -212,7 +212,7 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
     root = root.resolve()
     memory_dir = resolve_memory_dir(root)
     encapsulated = (root / ".ase" / "project-memory").is_dir()
-    artifacts_dir = ".ase/artifacts/04-verification" if encapsulated else "artifacts/04-verification"
+    artifacts_dir = "deliverables/04-verification"
 
     tasks = collect_tasks(memory_dir)
     waves, features = collect_waves_and_features(memory_dir)

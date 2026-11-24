@@ -1,6 +1,6 @@
 ---
 name: ase-lead
-description: "ASE entry point. Use to run ASE work end to end: decide the next step (/ase-adopt, /ase-plan, /ase-task, /ase-review, /ase-status, /ase-plugin), keep Project Memory current, and delegate to the right specialist agents only when the task needs them."
+description: "ASE entry point. Use to run ASE work end to end: decide the next step (/ase-adopt, /ase-plan, /ase-task, /ase-review, /ase-pack, /ase-export, /ase-status, /ase-plugin), enforce command prerequisites via check-prereq.py, keep Project Memory current, and delegate to the right specialist agents only when the task needs them."
 subagent: true
 mainAgent: true
 tools:

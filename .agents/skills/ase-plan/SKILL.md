@@ -9,8 +9,9 @@ description: Turn an approved one-page project idea into a minimal Lite MVP spec
 
 Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Memory operating rules, and the DCP templates. Design-decision documents may not be copied into a project repository; if a referenced source decision is unavailable, do not claim to have read it or infer additional rules from it. Do not execute implementation tasks.
 
-## 1. Check project and input
+## 1. Check prerequisites, project, and input
 
+0. Run `python3 scripts/check-prereq.py --command ase-plan` (or `.ase/scripts/check-prereq.py --command ase-plan`). If it exits with `1` (because neither `M0 | PASS` nor `M0-A | PASS` is recorded), stop immediately and remind the Human Owner to run `/ase-adopt` or `/ase-setup` first.
 1. Read `AGENTS.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
 2. Proceed only when `/ase-setup` has completed, `PROJECT_STATE.md` records `M0 | PASS`, the M0 checklist has the required evidence, and the project mode is Lite. If setup is incomplete, evidence is missing, or the mode is not Lite, stop and explain the prerequisite.
 3. Use the user's supplied idea or planning change. If none is provided, ask for it; do not invent product scope.
@@ -59,7 +60,7 @@ After explicit approval:
 4. Run the configured CI on `main`, or the declared Fast CI command as local gate evidence when hosted CI is not configured. If a check fails, count one correction cycle, make only a bounded plan correction, and rerun the relevant checks. At three failed cycles, set `BLOCKED`, record the impact, and stop without merging the blocked branch.
 5. Set the planning task to `DONE` only after the approved artifacts and state updates pass validation and the applicable gate passes on `main`. For `DONE` or `BLOCKED`, append exactly one task-log entry using `scripts/append-task-log.py`; never hand-edit the log.
 6. Stop after reporting the plan and the next assigned implementation task, and proactively offer two optional follow-ups when relevant:
-   - **Optional Stakeholder PDF (`project-plan` / `architecture-dossier`):** Offer to generate a stakeholder-level executive PDF (`build-stakeholder-pdf.py` from `templates/stakeholder-pdf-template.json`, saving the spec in `artifacts/specs/` and the PDF in `artifacts/02-planning/` or `artifacts/03-architecture/`, using `context_profile: "work"` with Sopra Steria Group palette/metadata or `"personal"` with a project-suited palette, verified clean via `verify-external-clean.py`).
+   - **Optional Stakeholder PDF (`project-plan` / `architecture-dossier`):** Offer to generate a stakeholder-level executive PDF (`build-stakeholder-pdf.py` from `templates/stakeholder-pdf-template.json`, saving the spec in `.ase/specs/` and the PDF in `deliverables/02-planning/` or `deliverables/03-architecture/`, using `context_profile: "work"` with Sopra Steria Group palette/metadata or `"personal"` with a project-suited palette, verified clean via `verify-external-clean.py`).
    - **Proactive Reusable Domain Plugin (`/ase-plugin`):** If 2 or more planned Features/Waves share domain-specific guardrails or deterministic validation scripts that are reusable across similar projects, propose packaging them into an ASE-external plugin under `plugins/<slug>/` (HAG-02).
    - **Git Milestone Proposal (`plan`):** Run `python3 scripts/git-advisor.py --milestone plan --task-id <ID>` (or `.ase/scripts/git-advisor.py`) and include the milestone Git proposal based on remote connectivity (`no-remote` vs `github-remote`), `.ase-install.json` versioned state, and `Project context` (`personal`: offer to execute upon confirmation; `work`: provide commands for manual execution only).
    Do not run `/ase-task`.
