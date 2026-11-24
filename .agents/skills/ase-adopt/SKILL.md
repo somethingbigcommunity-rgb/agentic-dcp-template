@@ -22,13 +22,30 @@ Never commit, push, create or switch branches, open PRs, install dependencies, o
 4. Confirm with the Human Owner: that ASE files stay encapsulated in `.ase/` and local (default) or are versioned, the branch they work on, whether AI assistant (Antigravity / Copilot) use on this code is permitted by their organization, and whether Graphify may be used locally. Do not proceed without the organizational confirmation.
 5. Create (or resume) one task `<ID>-adopt-<slug>.md` with `python3 .ase/scripts/next-id.py --type task` (or `scripts/next-id.py`) and `.ase/templates/task-template.md`: empty `parent`, `risk: medium`, `engine: antigravity` (or `vscode`), `status: IN_PROGRESS`, `correction_cycles: 0`. Load the Solution Architect and Technical Lead perspectives; no other roles are needed.
 
-## 2. Discover the as-is system (read-only)
+## 2. Discover the system and elicit `6W+1H` context (3-Tier Discovery Order)
 
-Inspect only what is needed, starting from the cheapest sources: `README*`, build manifests (`package.json`, `pom.xml`, `build.gradle*`, `pyproject.toml`, `requirements*.txt`, `go.mod`, `*.csproj`, `Cargo.toml`, `Dockerfile`, `docker-compose*`), CI definitions (`.github/workflows`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`), existing agent instructions (`GEMINI.md`, `.github/copilot-instructions.md`, `AGENTS.md`, `CONTRIBUTING*`), the top-level layout, entry points, and test folders. Use `git log --oneline -20` and `git branch --show-current` for context.
+Follow this strict **3-Tier Lookup Order** to minimize token usage and human friction:
 
-If Graphify is permitted and installed (via the `graphify` skill in Antigravity), you may build a local graph (`graphify-out/` stays local) to find modules, god nodes and dependencies. Graphify is derived knowledge: cite it, never let it override the code.
+1. **Tier 1 — Check `inputs/` FIRST:**
+   - Inspect all files inside the root `inputs/` directory (client briefs, RFPs, meeting notes, PDFs, ticket exports, schemas, `notes.md`). Extract every `6W+1H` fact (*Chi, Cosa, Perché, Dove, Quando, Quanto, Come*) already answered in `inputs/`.
+2. **Tier 2 — Fallback to Repository Metadata Only for Unanswered Gaps:**
+   - Only for technical/architectural facts not already answered in `inputs/`, inspect `README*`, build manifests (`package.json`, `pom.xml`, `build.gradle*`, `pyproject.toml`, `requirements*.txt`, `go.mod`, `*.csproj`, `Cargo.toml`, `Dockerfile`, `docker-compose*`), CI definitions (`.github/workflows`, `.gitlab-ci.yml`, `Jenkinsfile`, `azure-pipelines.yml`), existing agent instructions, top-level layout, entry points, and test folders. Use `git log --oneline -20` and `git branch --show-current`.
+   - If Graphify is permitted and installed (via the `graphify` skill in Antigravity), you may build a local graph (`graphify-out/` stays local) to find modules, god nodes and dependencies.
+3. **Tier 3 — Context-Adaptive `6W+1H` Interview (`work` vs. `personal`, Every Question Skippable):**
+   - Show the Human Owner what you extracted from `inputs/` and the repository, then ask **only** the remaining unresolved questions according to `Project context` (`work` vs. `personal`), using `.ase/templates/project-charter-template.md` (`dcp/00-project-management/project-charter.md`):
+     - **`Project context: work` (Complete Enterprise & Client Profile):**
+       1. *CHI:* Delivery org & practice (`Sopra Steria Group S.p.A.`), Client org & domain, your name/role (for `"I"` deliverables), RACI / reviewers / target audience, and Confidentiality level.
+       2. *PERCHÉ:* Business problem, target KPIs, and ranked Optimization Drivers.
+       3. *COSA:* Engagement type, in-scope deliverables, strict **out-of-scope untouchable perimeter**, and upstream dependencies/assumptions.
+       4. *DOVE:* `DEV`/`UAT`/`PRE-PROD`/`PROD` environment topology, cloud/DB/datasets, integrations, Git host, and external ticket prefix (`Jira`/`Azure Boards`).
+       5. *QUANDO:* Start/UAT/Go-Live dates, milestones, and `/ase-status` / SAL cadence.
+       6. *QUANTO (`HAG-04`):* Data volumetry/scale, latency SLAs, and cloud/query FinOps cost ceiling (e.g. max bytes billed).
+       7. *COME (`HAG-03`, `HAG-05`):* Tech stack & dependency rules, GDPR/PII & security rules, and Fast/Gate verification commands.
+     - **`Project context: personal` (Lean Profile):**
+       Ask only the 6 essentials not already in `inputs/`: *(1) Goal & Problem, (2) Target Users & PDF Theme, (3) Stack & Runtime, (4) Cost/Dependency Guardrails (`HAG-04`/`05`), (5) Out-of-Scope, (6) Git & Test Command*.
+   - **First-Class Skip Rule (Both `work` and `personal`):** The Human Owner may skip any question, field, or section they evaluate as not relevant. Record skipped items as `SKIPPED (not relevant)` in `dcp/00-project-management/project-charter.md`—never block `M0-A` on skipped context fields.
 
-Record facts with their source file. Mark anything inferred as `ASSUMPTION` and anything unknown as `UNKNOWN`; do not invent architecture.
+Record facts with their source file (`inputs/...` or repo path). Mark anything inferred as `ASSUMPTION`, anything skipped by the owner as `SKIPPED (not relevant)`, and anything unknown as `UNKNOWN`; do not invent architecture.
 
 ## 3. Propose the baseline
 

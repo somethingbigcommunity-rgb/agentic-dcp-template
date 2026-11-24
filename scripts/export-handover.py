@@ -37,6 +37,7 @@ EXCLUDED_ROOT_NAMES = {
     ".git",
     ".mcp.json",
     "graphify-out",
+    "inputs",
     "deliverables",
     "artifacts",
     "handover",

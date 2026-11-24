@@ -12,7 +12,7 @@ Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Me
 ## 1. Check prerequisites, project, and input
 
 0. Run `python3 scripts/check-prereq.py --command ase-plan` (or `.ase/scripts/check-prereq.py --command ase-plan`). If it exits with `1` (because neither `M0 | PASS` nor `M0-A | PASS` is recorded), stop immediately and remind the Human Owner to run `/ase-adopt` or `/ase-setup` first.
-1. Read `AGENTS.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
+1. Read `inputs/` first (if new briefs, specs, or notes were dropped there), then `AGENTS.md`, `project-memory/dcp/00-project-management/project-charter.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
 2. Proceed only when `/ase-setup` has completed, `PROJECT_STATE.md` records `M0 | PASS`, the M0 checklist has the required evidence, and the project mode is Lite. If setup is incomplete, evidence is missing, or the mode is not Lite, stop and explain the prerequisite.
 3. Use the user's supplied idea or planning change. If none is provided, ask for it; do not invent product scope.
 4. Load only relevant role cards from `.agents/skills/ase-roles/SKILL.md`. Consult the Product & Project Manager and Solution Architect cards; involve other roles only when the scope or risk requires them.

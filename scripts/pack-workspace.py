@@ -58,6 +58,7 @@ INTERNAL_ROOT_DIRS = {
     "__pycache__",
     ".git",
     "graphify-out",
+    "inputs",
     "deliverables",
     "artifacts",
     "handover",
@@ -156,6 +157,7 @@ def update_vscode_excludes(root: Path, empty_deliv_subdirs: list[str], hide_harn
         ".venv",
         ".mcp.json",
         "graphify-out",
+        "inputs",
     ]
     if "AGENTS.md" in installed_files or not (root / ".agents" / "AGENTS.md").is_file():
         harness_keys.append("AGENTS.md")

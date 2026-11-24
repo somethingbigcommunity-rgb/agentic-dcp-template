@@ -35,6 +35,7 @@ INCLUDE = [
     ".github/agents",
     ".github/instructions",
     "project-memory",
+    "inputs",
     "deliverables",
     "specs",
     "templates",
@@ -296,9 +297,12 @@ def install(
     )
     if not versioned and has_git:
         exclude_entries = ["/" + p for p in installed]
-        exclude_entries.extend(["/deliverables/", "/handover/"])
+        exclude_entries.extend(["/inputs/", "/deliverables/", "/handover/"])
         if encapsulated:
             exclude_entries.append(f"/{ENCAPSULATED_PREFIX}/")
+        if SOURCE != root and root in SOURCE.parents:
+            rel_template = SOURCE.relative_to(root).as_posix()
+            exclude_entries.append(f"/{rel_template}/")
         if write_exclude(root, exclude_entries):
             print(f"ASE files excluded from Git via {exclude_file(root)}")
     print("Done. Open the repository in Antigravity (or VS Code), select the 'ASE Lead' agent and run /ase-adopt.")
