@@ -117,19 +117,19 @@ Every task has `risk: low | medium | high`.
 | medium | New business logic, new APIs, shared components | Integration tests, review by the relevant specialist |
 | high | Auth, data model, migrations, dependencies, cost or latency | Relevant security/performance tests, Security Reviewer or Solution Architect, matching HAGs. For record deletion, include stale-reference tests where applicable. |
 
-## 7. Human Approval Gates
+## 7. Human Approval Gates & Correlated Optimization Drivers
 
-Decisions reserved to the human owner. Active gates depend on the working mode.
+Decisions reserved to the human owner. Active gates depend on the working mode (`HAG-01` through `HAG-06` are all active in `Lite`).
 
-| ID | Decision | Lite | Standard | Enterprise |
-|----|----------|:----:|:--------:|:----------:|
-| HAG-01 | Human merge of a `main → accepted` PR after Gate/review checks (`remote`), or human acceptance and commit of the task diff (`local`); procedural fallback requires HAG-06 | ✓ | ✓ | ✓ |
-| HAG-02 | ADRs, architectural changes, "as-is" baseline (M0-A) | ✓ | ✓ | ✓ |
-| HAG-03 | Auth, authorization, data model, destructive migrations | ✓ | ✓ | ✓ |
-| HAG-04 | Exceeding cost, latency or usage thresholds set in P0 | – | ✓ | ✓ |
-| HAG-05 | New external dependencies or licenses | – | ✓ | ✓ |
-| HAG-06 | Waiver of a quality gate or a harness rule | ✓ | ✓ | ✓ |
-| HAG-07 | Milestones M3, M7, M8 and releases | – | ✓ | ✓ |
+| ID | Decision | Correlated Drivers | Lite | Standard | Enterprise |
+|----|----------|--------------------|:----:|:--------:|:----------:|
+| HAG-01 | Human merge of a `main → accepted` PR after Gate/review checks (`remote`), or human acceptance and commit of the task diff (`local`); procedural fallback requires HAG-06 | 🔺 Quality, 🔺 Traceability, 🔻 Blast Radius | ✓ | ✓ | ✓ |
+| HAG-02 | ADRs, architectural changes, "as-is" baseline (M0-A), `/ase-plugin` scaffolds | 🔻 Debt & Coupling, 🔺 Reusability, 🔻 Cost | ✓ | ✓ | ✓ |
+| HAG-03 | Auth, authorization, data model, destructive migrations | 🔺 Security & Privacy, 🔻 Attack Surface | ✓ | ✓ | ✓ |
+| HAG-04 | Exceeding cost, latency, query/bytes-billed, or usage thresholds | 🔻 Cost (FinOps/Token), 🔻 Time (Latency) | ✓ | ✓ | ✓ |
+| HAG-05 | New external dependencies or licenses | 🔻 Cost, 🔻 Coupling, 🔺 Security | ✓ | ✓ | ✓ |
+| HAG-06 | Waiver of a quality gate or a harness rule | Trade-off: 🔻 Time vs. 🔺 Quality/Security | ✓ | ✓ | ✓ |
+| HAG-07 | Milestones M3, M7, M8 and releases | 🔺 Stakeholder Clarity, 🔺 Usability, 🔺 Quality | – | ✓ | ✓ |
 
 When an active gate applies, stop and ask; record approved architectural decisions as ADRs.
 
@@ -174,3 +174,35 @@ Harness files (skills, role cards, agents, rules, templates, this file) are in E
 1. **ASE has no voice or co-authorship:** ASE is an internal engineering harness, never a speaker or team member.
 2. **In direct conversation with the Human Owner:** Address the Human Owner as `"you"` (`"tu"`) and refer to your own agent actions in first-person singular (`"I"` / `"Io"`). **Never** use collaborative first-person plural (`"we"`, `"us"`, `"our"`, `"noi"`, `"abbiamo"`) to describe work done in the project.
 3. **In all drafted messages, answers, emails, commit messages, PR descriptions, review summaries, and stakeholder documents proposed for the Human Owner:** Write strictly in the **Human Owner's first-person singular voice (`"I"` / `"Io"` / `"Ho..."`)** — never `"we"` / `"noi"` / `"abbiamo"`. Verify drafted handover/review files with `python3 scripts/verify-external-clean.py --check-first-person <paths>` (automatically enforced on `05-release-and-handover/` and `state/reviews/`).
+
+## 12. Optimization Drivers & Command-Level Priorities
+
+Every plan, implementation, and review must actively optimize **5 Factors to Reduce** and **5 Factors to Augment**, prioritized by lifecycle command and task risk class:
+
+- **5 Factors to Reduce (Minimize):**
+  1. **Cost (`HAG-04`, `HAG-05`):** Token usage (minimal targeted context), cloud/query FinOps cost (avoid N+1 queries, full-table scans, redundant API/LLM calls), and external dependencies (prefer standard library / existing stack).
+  2. **Time (`HAG-04`, `HAG-06`):** Cycle time (small vertical slices), runtime latency, and `Fast CI` execution time.
+  3. **Human Cognitive Load & Friction (`HAG-01`):** Clean 3-Zone workspace (`.vscode/settings.json`), decision-first reports, ready-to-run `git-advisor.py` commands, and one-step `/ase-pack` / `/ase-export`.
+  4. **Blast Radius, Attack Surface & Rework (`HAG-01`, `HAG-03`):** Single-task diffs, least privilege, `PAUSED` Return Stack (`T-NNNN.1`), and max 3 `correction_cycles`.
+  5. **Technical Debt, Coupling & Boilerplate (`HAG-02`, `HAG-05`):** Reuse existing modules before creating new abstractions; retire obsolete scope via `SUPERSEDED`/`DEFERRED`.
+- **5 Factors to Augment (Maximize):**
+  1. **Quality, Correctness & Determinism (`HAG-01`):** Verifiable tests (`REQ-NNN`/`US-NNN`), edge-case coverage, idempotency, and non-reused persistent IDs.
+  2. **Security, Privacy & Trust Boundaries (`HAG-03`):** AuthN/AuthZ, input validation, parameterized queries, secrets isolation, and `verify-external-clean.py`.
+  3. **User Usability & Ergonomics (`UX / DX`):** Clear UI/dashboard states (loading, empty, error, success), accessibility, actionable CLI/API errors, and intuitive defaults (enforced directly by active Lite roles without extra subagent overhead).
+  4. **Reusability & Portability (`HAG-02`):** Clean module boundaries and zero-ASE-dependency `/ase-plugin` extraction.
+  5. **Traceability & Stakeholder Clarity (`HAG-01`, `HAG-07`):** `TRACEABILITY.md`, `/ase-status`, `"I"` voice consistency, and executive `deliverables/`.
+
+| Command / Context | Primary (Dominant) Drivers | Secondary (Guardrail) Drivers |
+|-------------------|----------------------------|-------------------------------|
+| `/ase-setup`, `/ase-adopt` | 🔻 Friction, 🔺 Security/Trust Boundaries, 🔻 Time-to-Start | 🔺 Reusability, 🔺 Stakeholder Clarity |
+| `/ase-plan` (MVP / Wave / Pivot) | 🔻 Time-to-Value & Cost (`HAG-04`/`05`), 🔺 Usability (UX/DX), 🔻 Coupling & Debt (`HAG-02`) | 🔺 Security (`HAG-03`), 🔺 Traceability |
+| `/ase-plan` (WBS `T-NNNN.1` Detour) | 🔻 Blast Radius & Rework, 🔻 Cycle Time | 🔺 Traceability |
+| `/ase-task` (`risk: low`) | 🔺 Usability (UX/DX), 🔻 Boilerplate & Debt | 🔺 Correctness, 🔻 Token Cost |
+| `/ase-task` (`risk: medium`) | 🔺 Quality & Correctness, 🔻 Runtime Cost & Latency (`HAG-04`/`05`) | 🔺 Usability (UX/DX), 🔻 Coupling |
+| `/ase-task` (`risk: high`) | 🔺 Security & Privacy (`HAG-03`), 🔻 Blast Radius & Attack Surface | 🔺 Determinism, 🔻 Cost & Latency (`HAG-04`) |
+| `/ase-status` | 🔻 Cognitive Load, 🔺 Stakeholder Clarity | 🔻 Rework (surface friction early) |
+| `/ase-review` | 🔺 Quality & Security, 🔺 Traceability, 🔻 Technical Debt & Cost | 🔺 Usability (UX/DX) |
+| `/ase-pack`, `/ase-export` | 🔺 Stakeholder Clarity, 🔻 Human Friction | 🔺 Security/Privacy (`verify-external-clean.py`) |
+| `/ase-plugin` | 🔺 Reusability & Portability (`HAG-02`), 🔻 Future Time & Cost | 🔺 Determinism |
+
+**Situational Trade-Off Hierarchy:** `Security & Data Integrity (HAG-03)` > `Correctness & Determinism (HAG-01)` > `Usability & Simplicity without unapproved dependencies (HAG-05)` > `Speed & MVP scope reduction`.

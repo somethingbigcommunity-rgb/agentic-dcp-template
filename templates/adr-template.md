@@ -13,9 +13,12 @@ date: YYYY-MM-DD
 
 <The decision explicitly approved by the Human Owner.>
 
-## Consequences
+## Consequences & Driver Impact
 
-- <Positive or negative consequence>
+- **Cost & Latency (`HAG-04`):** <Impact on token, cloud/query, or runtime latency>
+- **Dependencies & Coupling (`HAG-05`):** <New external packages or coupling impact>
+- **Security & Quality (`HAG-01` / `HAG-03`):** <Trust boundary and verification impact>
+- **Usability & Clarity:** <UX / DX / maintainability impact>
 
 ## Approval
 

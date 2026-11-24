@@ -20,7 +20,7 @@ Execute one assigned task and stop. Follow `AGENTS.md` and the Iteration Protoco
 
 ## 2. Inspect and plan
 
-Follow Iteration Protocol steps 1–3: inspect relevant project context and code, identify affected files and architecture conflicts, then record a concise implementation and verification plan in the task's execution report. If the task conflicts with approved architecture, stop and report it.
+Follow Iteration Protocol steps 1–3: inspect relevant project context and code, reuse existing modules/utilities before creating new abstractions (`AGENTS.md` §12), identify affected files and architecture/cost/dependency conflicts (`HAG-02`, `HAG-03`, `HAG-04`, `HAG-05`), and apply the risk-specific primary drivers (`risk: low` → Usability UX/DX & Simplicity; `risk: medium` → Quality/Correctness & Runtime Cost/Latency; `risk: high` → Security/Privacy & Blast Radius), then record a concise implementation and verification plan in the task's execution report. If the task conflicts with approved architecture or requires an unapproved external dependency (`HAG-05`) or cost/latency increase (`HAG-04`), stop and report it.
 
 ## 3. Implement and verify
 
