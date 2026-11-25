@@ -1,3 +1,17 @@
 # Next Task
 
-No task is assigned yet. After M0, `/ase-plan` or a human must select a planned task before `/ase-task` can make changes.
+## Current task
+
+- **ID:** `none`
+- **File:** `none`
+- **Status:** `none`
+
+## Inner Sequence Queue & Return Stack
+
+- **Queued next in inner sequence:** `none`
+- **Return Stack (PAUSED tasks to resume):** `none`
+
+## Context Alerts & Pending Command Chain
+
+- **Context Alerts:** `none`
+- **Pending Command Chain:** `none`

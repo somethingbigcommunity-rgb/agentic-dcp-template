@@ -1,19 +1,41 @@
 ---
 name: ase-plan
-description: Turn an approved one-page project idea into a minimal Lite MVP specification and traceable backlog of Waves, Features, User Stories, requirements, and tasks. Use when asked to run /ase-plan, create a project plan, or re-plan existing ASE work.
+description: Turn an approved project idea into a minimal Lite MVP specification and traceable backlog, or continuously update Project Memory from call notes, screenshots, and inputs/ (/ase-plan, /ase-memo, /ase-context). Use when asked to run /ase-plan, /ase-memo, /ase-context, update project memory/context, or re-plan existing ASE work.
 ---
 
-# `/ase-plan`
+# `/ase-plan` (and Interchangeable Aliases `/ase-memo` & `/ase-context`)
 
-> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. When `.ase/` encapsulation is present, `project-memory/`, `artifacts/`, `scripts/`, and `templates/` resolve under `.ase/`. Always use first-person singular (`"I"`, addressing the Human Owner as `"you"`, never `"we"`).
+> If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. When `.ase/` encapsulation is present, `project-memory/`, `specs/`, `scripts/`, and `templates/` resolve under `.ase/`. Always use first-person singular (`"I"`, addressing the Human Owner as `"you"`, never `"we"`).
 
-Create or update one Lite planning increment. Follow `AGENTS.md`, the Project Memory operating rules, and the DCP templates. Design-decision documents may not be copied into a project repository; if a referenced source decision is unavailable, do not claim to have read it or infer additional rules from it. Do not execute implementation tasks.
+`/ase-plan`, `/ase-memo`, and `/ase-context` are interchangeable entry points with two modes:
+- **Mode 1 — Continuous Context & Memory Update Mode (`/ase-memo`, `/ase-context`, `/ase-plan <note>`, or natural chat paste/screenshot):** Incrementally ingests `inputs/` and chat notes/screenshots, auto-applies Bucket 1 non-HAG updates immediately without opening a `T-NNNN` task, queries Graphify (`--query-graph`) in 0 tokens, and gates Bucket 2 normative changes (`HAG-02`..`HAG-06`), chaining into Mode 2 upon approval when the backlog or architecture must be reshaped.
+- **Mode 2 — Backlog, Wave & WBS Detour Planning Mode (`/ase-plan`):** Creates or updates one Lite planning increment (`mvp-specification.md`, `REQ-NNN`, `W-NN`, `F-NNN`, `US-NNN`, `T-NNNN` / `T-NNNN.1`).
 
-## 1. Check prerequisites, project, and input
+## 0. Step 0 Prerequisite Check & Mode Triage (`check-prereq.py` + `sync-inputs.py`)
 
-0. Run `python3 scripts/check-prereq.py --command ase-plan` (or `.ase/scripts/check-prereq.py --command ase-plan`). If it exits with `1` (because neither `M0 | PASS` nor `M0-A | PASS` is recorded), stop immediately and remind the Human Owner to run `/ase-adopt` or `/ase-setup` first.
-1. Read `inputs/` first (if new briefs, specs, or notes were dropped there), then `AGENTS.md`, `project-memory/dcp/00-project-management/project-charter.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
-2. Proceed only when `/ase-setup` has completed, `PROJECT_STATE.md` records `M0 | PASS`, the M0 checklist has the required evidence, and the project mode is Lite. If setup is incomplete, evidence is missing, or the mode is not Lite, stop and explain the prerequisite.
+1. Run `python3 scripts/check-prereq.py --command ase-plan` (or `--command ase-memo` / `--command ase-context`, using `.ase/scripts/check-prereq.py` when encapsulated).
+   - **Upstream Prerequisite Chaining:** If `check-prereq.py` exits with `1` (e.g. `M0`/`M0-A` is not `PASS` or a cloned release folder is waiting for `/ase-switch`), record the `prerequisite_chain` via `python3 scripts/sync-inputs.py --set-chain "<prereq> -> /ase-plan"`, ask the Human Owner for approval to execute the prerequisite command first, and **automatically continue** into `/ase-plan` once approved.
+2. Run `python3 scripts/sync-inputs.py --status --ensure-graphifyignore` (or `.ase/scripts/sync-inputs.py`) to inspect `inputs/` via SHA-256 digests (`state/INPUTS_STATE.json`):
+   - **Read ONLY `new_files` and `modified_files` in `inputs/`**, never re-reading `unchanged_files` from earlier months (`🔻 Reduce Token Cost`).
+3. **Autonomous 2-Bucket HAG Triage (Mode 1 — Continuous Context & Memory Update):**
+   Whenever the Human Owner invokes `/ase-memo`, `/ase-context`, pastes call/meeting notes or screenshots in chat, or drops files in `inputs/`:
+   - **Bucket 1 (Non-HAG Descriptive & Informational Context — Auto-Applied Immediately with Zero Task Ceremony):**
+     - Patch non-HAG rows of `dcp/00-project-management/project-charter.md` (*Chi*, *Perché*, *Quando*, *Come* governance) via `python3 scripts/sync-inputs.py --patch-charter "Key=Value"`.
+     - Patch non-architectural team conventions in `dcp/03-design/conventions.md` and environment blockers in `state/KNOWN_ISSUES.md`.
+     - If `graphify-out/graph.json` exists, run `python3 scripts/sync-inputs.py --query-graph "<module-or-concept>"` (`0` tokens, `< 50ms`) to find connected files, check for Graphify **God-Node** coupling (`HAG-02`), and identify impacted open tasks (`T-NNNN`).
+     - Append the chronological entry to `state/CONTEXT_LOG.md` (and set `Context Alerts` on `state/NEXT_TASK.md` if open tasks are affected) via `python3 scripts/sync-inputs.py --append-log --source "<source>" --summary "<summary>" --updated "<files>" --hag-status "<NONE | PENDING:HAG-XX>" [--alert-next-task "<warning>"]`.
+     - Mark ingested `inputs/` files via `python3 scripts/sync-inputs.py --mark-ingested`.
+   - **Bucket 2 (HAG-Governed Normative Changes — Gated Before Modifying Normative Files):**
+     - If the note/screenshot triggers **`HAG-02`** (architecture, ADR, or backlog scope/task reshape), **`HAG-03`** (auth, GDPR/PII, data model, destructive migration), **`HAG-04`** (FinOps/cloud/query/token cost or SLA ceiling), **`HAG-05`** (new external dependency/license), or **`HAG-06`** (gate waiver):
+       1. Apply all Bucket 1 updates first and log `PENDING:HAG-XX` in `state/CONTEXT_LOG.md`.
+       2. Run `python3 scripts/check-prereq.py --post --command ase-memo` and record the pending chain (`python3 scripts/sync-inputs.py --set-chain "/ase-memo -> /ase-plan"`).
+       3. Present the **Memory Update Receipt** (*1. Auto-Applied Bucket 1 Updates*, *2. Impacted Open Tasks / Graphify Nodes*, *3. Combined HAG + Reactive Chain Approval Prompt to execute Mode 2 `/ase-plan`*) and wait for confirmation.
+   - If the update contains only Bucket 1 items (no backlog or HAG changes), present the Memory Update Receipt and stop without opening a `T-NNNN` task!
+
+## 1. Check project and input for Mode 2 (Backlog & Roadmap Planning)
+
+1. Read `AGENTS.md`, `project-memory/dcp/00-project-management/project-charter.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, `CONTEXT_LOG.md`, the relevant DCP requirements and implementation files, and applicable ADRs.
+2. Proceed only when `PROJECT_STATE.md` records `M0 | PASS` or `M0-A | PASS` and the project mode is Lite.
 3. Use the user's supplied idea or planning change. If none is provided, ask for it; do not invent product scope.
 4. Load only relevant role cards from `.agents/skills/ase-roles/SKILL.md`. Consult the Product & Project Manager and Solution Architect cards; involve other roles only when the scope or risk requires them.
 
@@ -63,7 +85,7 @@ After explicit approval:
    - **Optional Stakeholder PDF (`project-plan` / `architecture-dossier`):** Offer to generate a stakeholder-level executive PDF (`build-stakeholder-pdf.py` from `templates/stakeholder-pdf-template.json`, saving the spec in `.ase/specs/` and the PDF in `deliverables/02-planning/` or `deliverables/03-architecture/`, using `context_profile: "work"` with Sopra Steria Group palette/metadata or `"personal"` with a project-suited palette, verified clean via `verify-external-clean.py`).
    - **Proactive Reusable Domain Plugin (`/ase-plugin`):** If 2 or more planned Features/Waves share domain-specific guardrails or deterministic validation scripts that are reusable across similar projects, propose packaging them into an ASE-external plugin under `plugins/<slug>/` (HAG-02).
    - **Git Milestone Proposal (`plan`):** Run `python3 scripts/git-advisor.py --milestone plan --task-id <ID>` (or `.ase/scripts/git-advisor.py`) and include the milestone Git proposal based on remote connectivity (`no-remote` vs `github-remote`), `.ase-install.json` versioned state, and `Project context` (`personal`: offer to execute upon confirmation; `work`: provide commands for manual execution only).
-   Do not run `/ase-task`.
+   - **Reactive Downstream Command Chain (`check-prereq.py --post`):** Run `python3 scripts/check-prereq.py --post --command ase-plan`, record the pending chain (`python3 scripts/sync-inputs.py --set-chain "/ase-plan -> /ase-task"`), and ask the Human Owner for approval to execute `/ase-task` on the newly assigned task (do not auto-run `/ase-task` without confirmation).
 
 ## Identifier helper
 

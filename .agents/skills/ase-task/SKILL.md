@@ -11,7 +11,7 @@ Execute one assigned task and stop. Follow `AGENTS.md` and the Iteration Protoco
 
 ## 1. Check prerequisites, select, and validate the task
 
-0. Run `python3 scripts/check-prereq.py --command ase-task` (or `.ase/scripts/check-prereq.py --command ase-task`). If it exits with `1` (because `M0`/`M0-A` is incomplete, no task is assigned in `NEXT_TASK.md`, or the assigned task is `BLOCKED`), stop immediately and remind the Human Owner which prerequisite command (`/ase-adopt`, `/ase-setup`, or `/ase-plan`) to run first.
+0. Run `python3 scripts/check-prereq.py --command ase-task` (or `.ase/scripts/check-prereq.py --command ase-task`). If it exits with `1` (because `M0`/`M0-A` is incomplete, no task is assigned in `NEXT_TASK.md`, or the assigned task is `BLOCKED`), record the `prerequisite_chain` via `python3 scripts/sync-inputs.py --set-chain "<prereq> -> /ase-task"`, ask the Human Owner for approval to execute the prerequisite command (`/ase-adopt`, `/ase-setup`, or `/ase-plan`) first, and automatically continue into `/ase-task` once approved. If `check-prereq.py` warns of an active `Context Alerts` banner in `NEXT_TASK.md`, ask the Human Owner whether to adjust the task via `/ase-plan` first or clear the alert (`sync-inputs.py --clear-alerts`) and proceed.
 1. Read `AGENTS.md`, `project-memory/state/NEXT_TASK.md`, and the referenced task file. An explicit task ID supplied by the human takes precedence over `NEXT_TASK.md`.
 2. Execute no more than one task per invocation. If no task is assigned, the task file is missing, required fields or verifiable criteria are absent, or its status is `DONE` or `BLOCKED`, make no implementation changes; explain the blocker. An `IN_REVIEW` task may be resumed only to address identified review or CI findings; if none are pending, report that it is awaiting the gate and stop.
 3. Check applicable HAGs, dependencies, DCP sections, and ADRs before proceeding. Stop for human approval where required.
@@ -63,7 +63,7 @@ After all criteria pass:
    Use an empty `--parent` if the task has no parent. Use the actual project engine (`antigravity` or `vscode`), date, final cycle count, and a concise note. If the helper fails, surface the error and do not claim the log was updated.
 
 7. Update `NEXT_TASK.md` and other descriptive state only when the task provides enough evidence to do so. When completing an inner WBS sequence task (`T-NNNN.1`, `T-NNNN.2`, `T-NNNN.1.1`), advance `NEXT_TASK.md` to the next task in `Queued next in inner sequence`; when the inner sequence is empty, pop the `Return Stack (PAUSED tasks to resume)` in `NEXT_TASK.md` and restore the paused parent task (`T-NNNN`) back to `IN_PROGRESS` (or `TODO`). Do not hand-edit `TRACEABILITY.md`; rebuild it with `scripts/build-traceability.py`.
-8. Report status, files, checks and results, log entry, commit, and any blocker. Stop; do not begin another task.
+8. Run `python3 scripts/check-prereq.py --post --command ase-task` (or `.ase/scripts/check-prereq.py --post --command ase-task`), report status, files, checks and results, log entry, commit, any blocker, and the recommended next command in the reactive chain (`/ase-task` for the next queued/remaining task or `/ase-review` when all tasks in the Work Package are `DONE`), asking for approval before executing the chained command.
 
 ## Local Git mode
 

@@ -11,7 +11,7 @@ Review one completed Work Package and open a Pull Request from `main` to `accept
 
 ## 1. Check prerequisites and validate the review target
 
-0. Run `python3 scripts/check-prereq.py --command ase-review` (or `.ase/scripts/check-prereq.py --command ase-review`). If it exits with `1` (because tasks are still `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, or `PAUSED` on the Return Stack), stop immediately and remind the Human Owner to finish open tasks with `/ase-task` first.
+0. Run `python3 scripts/check-prereq.py --command ase-review` (or `.ase/scripts/check-prereq.py --command ase-review`). If it exits with `1` (because tasks are still `IN_PROGRESS`, `IN_REVIEW`, `BLOCKED`, or `PAUSED` on the Return Stack), record the `prerequisite_chain` in `NEXT_TASK.md` (`sync-inputs.py --set-chain`), ask the Human Owner for approval to resolve the prerequisite (`HAG-01` acceptance or `/ase-task`) first, and automatically continue into `/ase-review` once approved.
 1. Read `AGENTS.md`, `project-memory/state/PROJECT_STATE.md`, `IMPLEMENTATION_STATUS.md`, `NEXT_TASK.md`, the target Feature or Work Package, its linked User Stories, requirements, tasks, relevant ADRs, and the Code Reviewer role card. Load QA Engineer or Security Reviewer only when risk or impact requires them.
 2. Require exactly one explicit target ID (`F-NNN` or `WP-NNN`) that exists in the canonical Feature directory. Stop if its scope cannot be tied to a single Work Package.
 3. Require the current branch to be `main`, a clean worktree, and both `main` and `accepted` to exist locally and on `origin`. Confirm local and remote branch tips match; stop if synchronization is needed. Do not fetch, push, switch branches, or discard work.

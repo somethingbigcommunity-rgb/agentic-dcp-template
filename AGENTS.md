@@ -25,7 +25,7 @@ The project state has exactly three sources:
 
 1. **Project Memory** (`project-memory/`): intent, decisions and state. Authoritative.
 2. **GitHub**: versioned code and history. `accepted` holds the accepted version.
-3. **Graphify** (if enabled): relationships derived from the code. Never overrides the other two.
+3. **Graphify** (if enabled, `graphify-out/`): structural AST (0 tokens) and semantic relationships derived from the code, `inputs/`, and `dcp/` (excluding internal ASE paths via `.graphifyignore`). Never overrides the other two; queried locally in 0 tokens by `scripts/sync-inputs.py --query-graph` to detect God-Node coupling (`HAG-02`) and open-task impact (`T-NNNN`), while semantic `--update` runs on docs/images are gated by `HAG-04`.
 
 External tools (Jira, Confluence, boards) are secondary: they may receive copies, never decide. If Project Memory and code diverge, report it; do not silently "fix" either side.
 
@@ -54,9 +54,9 @@ repository-root/
     └── templates/   ← document and PDF templates
 ```
 
-- **Normative** files (`dcp/`, `adr/`) change only through human approval (HAG-02 for architecture). Exception: the `status` and `correction_cycles` fields of task files in `dcp/04-implementation/tasks/` are descriptive.
-- **Descriptive** files (`state/`) are updated by agents at step 7 of the Iteration Protocol without approval.
-- `state/TASK_LOG.md` is append-only. `state/TRACEABILITY.md` is generated; never edit it by hand.
+- **Normative** files (`dcp/`, `adr/`) change only through human approval (HAG-02 for architecture). Exception: the `status` and `correction_cycles` fields of task files in `dcp/04-implementation/tasks/` are descriptive, and non-HAG informational rows of `dcp/00-project-management/project-charter.md` (*Chi*, *Perché*, *Quando*, *Come* governance) and `dcp/03-design/conventions.md` may be updated row-by-row during Continuous Context & Memory Updates (`/ase-memo`, `/ase-context`, `/ase-plan`) without opening a `T-NNNN` task.
+- **Descriptive** files (`state/`) are updated by agents at step 7 of the Iteration Protocol or during Continuous Context Updates (`state/CONTEXT_LOG.md`, `state/INPUTS_STATE.json`, `state/KNOWN_ISSUES.md`, `state/NEXT_TASK.md`) without approval.
+- `state/TASK_LOG.md` and `state/CONTEXT_LOG.md` are append-only. `state/TRACEABILITY.md` is generated; never edit it by hand.
 - Read only what the current task needs. Start from `state/NEXT_TASK.md` and the task file.
 
 ## 3. Git model
@@ -102,7 +102,7 @@ For persistent application records, do not reuse identifiers while stale referen
 
 - Execute **one task at a time** with the Iteration Protocol (`dcp/04-implementation/iteration-protocol.md`): input, pre-implementation, planning, implementation, verification, reporting, state update, stop.
 - Implement only the assigned task. No unrelated changes, no future tasks.
-- **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. There are no exceptions, commands included: each run of `/ase-setup` or `/ase-plan` first opens its own task file (e.g. `T-0001: P0 setup`, `T-0012: plan W-02`), writes only within that task and logs it in `TASK_LOG.md` when closed. Creating a task file in `TODO` is how a task starts, so it is not a change outside a task. Read-only questions and analysis need no task.
+- **No change outside a task.** Every change to the repository (code, dependencies, configuration, documentation) happens inside a task file. If asked for a change with no assigned task, do not perform it: propose the task (goal, risk, criteria), create it with `/ase-plan` or the template, and wait until it is assigned. Each backlog-planning run of `/ase-setup` or `/ase-plan` opens its own task file (e.g. `T-0001: P0 setup`, `T-0012: plan W-02`), writes only within that task and logs it in `TASK_LOG.md` when closed. Creating a task file in `TODO` is how a task starts, so it is not a change outside a task. Read-only questions, analysis, and **Bucket 1 Continuous Context & Memory Updates** (`/ase-memo`, `/ase-context`, or `/ase-plan` Context Mode via `scripts/sync-inputs.py` updating `state/CONTEXT_LOG.md`, `state/INPUTS_STATE.json`, `state/KNOWN_ISSUES.md`, `state/NEXT_TASK.md` alerts/chains, and non-HAG informational rows of `project-charter.md` / `conventions.md`) need no `T-NNNN` task file; any Bucket 2 normative change (`HAG-02`..`HAG-06`) stops for human approval before modifying normative files or opening a `/ase-plan` task.
 - Task states: `TODO → IN_PROGRESS → IN_REVIEW → DONE`, or `BLOCKED` / `PAUSED` (suspended on the Return Stack in `state/NEXT_TASK.md` while an inner WBS sequence `T-NNNN.1` runs) / `DEFERRED` (postponed to a later Wave) / `SUPERSEDED` (retired by a roadmap pivot).
 - Each failed verification increments `correction_cycles`. **At the third failure the task becomes `BLOCKED`** and a human decides. In a local-only project without CI automation, a passing declared Fast CI command on `main` is the local gate evidence required for `DONE`; never describe it as hosted CI.
 - On `DONE`, `BLOCKED`, `PAUSED`, `DEFERRED`, or `SUPERSEDED`, append one line to `state/TASK_LOG.md`.
@@ -134,15 +134,17 @@ Decisions reserved to the human owner. Active gates depend on the working mode (
 
 When an active gate applies, stop and ask; record approved architectural decisions as ADRs.
 
-## 8. Commands & Deterministic Prerequisite Guard (`scripts/check-prereq.py`)
+## 8. Commands, Continuous Memory Aliases (`/ase-memo`, `/ase-context`), & Approval-Gated Reactive Command Chaining (`scripts/check-prereq.py`)
 
-Every `/ase-*` command has a single non-overlapping responsibility and runs `python3 scripts/check-prereq.py --command <name>` (or `.ase/scripts/check-prereq.py`) at Step 0. If a lifecycle dependency is broken (for example, running `/ase-export` before `/ase-pack`, or `/ase-review` while a task is `IN_PROGRESS` or `PAUSED`), stop and tell the Human Owner which prerequisite command to run first.
+Every `/ase-*` command has a single non-overlapping responsibility and runs `python3 scripts/check-prereq.py --command <name>` at Step 0 and `python3 scripts/check-prereq.py --post --command <name>` at completion:
+- **Upstream Prerequisite Chaining (Step 0 — Never a Dead-End Block):** If a prerequisite command is needed first (e.g., `/ase-export` called before `/ase-pack`, `/ase-task` called with no assigned task, or a cloned release folder detected for `/ase-switch`), record the `prerequisite_chain` in `state/NEXT_TASK.md` (`Pending Command Chain`), ask the Human Owner for approval to execute the prerequisite command first, and **automatically continue into the requested command** once approved.
+- **Downstream Cascade Chaining (`--post`):** When a command finishes and triggers the condition for a downstream command (e.g., `/ase-memo` / `/ase-context` logs a `HAG-02`..`05` scope/architecture change requiring `/ase-plan`, `/ase-adopt` finishes M0-A and triggers `/ase-plan`, `/ase-plan` assigns a task and triggers `/ase-task`, `/ase-task` completes the last task of a Work Package and triggers `/ase-review`, `/ase-review` triggers `/ase-pack`, or `/ase-pack` offers `/ase-export`), combine the applicable HAG and chain prompt into a single question and execute the chained command upon approval.
 
 | Command | Single Primary Purpose |
 |---------|------------------------|
 | `/ase-setup` | Lite P0 for a new GitHub project (`remote` Git mode, mutually exclusive with `/ase-adopt`): mode, engine, stack, branches, Project Memory, and the M0 checklist |
 | `/ase-adopt` | P0-A Lite for an existing or local-only repository (`local` Git mode, mutually exclusive with `/ase-setup`): read the code, rebuild the minimal DCP, configure `.vscode/settings.json` (`files.exclude`), and record the as-is baseline (M0-A, HAG-02) |
-| `/ase-plan` | Propose an MVP and create or update an approved, traceable Lite backlog (including WBS inner sequences `T-NNNN.1` & Return Stack or `SUPERSEDED`/`DEFERRED` pivots); assign the next ready task in `NEXT_TASK.md` |
+| `/ase-plan` *(aliases: `/ase-memo`, `/ase-context`)* | **Mode 1 (Context & Memory Update — `/ase-memo`, `/ase-context`, `/ase-plan`, or chat paste):** Incrementally ingest `inputs/` (`scripts/sync-inputs.py`), auto-apply Bucket 1 non-HAG updates (`state/CONTEXT_LOG.md`, `KNOWN_ISSUES.md`, `NEXT_TASK.md` alerts, non-HAG `project-charter.md` rows) with zero task ceremony, query Graphify (`--query-graph`) in 0 tokens, and gate Bucket 2 changes (`HAG-02`..`06`).<br>**Mode 2 (Backlog & Roadmap Planning):** Propose an MVP and create or update an approved, traceable Lite backlog (including WBS inner sequences `T-NNNN.1` & Return Stack or `SUPERSEDED`/`DEFERRED` pivots); assign the next ready task in `NEXT_TASK.md` |
 | `/ase-task` | Execute one assigned task with the Iteration Protocol, Fast CI, and Return Stack advancement |
 | `/ase-review` | Technical Work Package Quality Gate (`Gate CI`, traceability matrix, full diff review, DoD) and Git Pull Request (`main → accepted` PR in `remote` mode, or `state/reviews/<WP>-review.md` + `deliverables/05-release-and-handover/pr-description.md` in `local` mode) |
 | `/ase-pack` | In-place post-work curation of `deliverables/` (`scripts/pack-workspace.py`): generate `deliverables/INDEX.md` in `"I"` voice, optional stakeholder PDFs from `.ase/specs/`, hide internal/empty folders via `.vscode/settings.json` (`files.exclude`), verify zero-ASE-footprint, and record `state/PACK_STATE.json` |

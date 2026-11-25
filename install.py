@@ -51,6 +51,7 @@ INCLUDE = [
     "scripts/pack-workspace.py",
     "scripts/export-handover.py",
     "scripts/switch-release.py",
+    "scripts/sync-inputs.py",
 ]
 ENCAPSULATED_PREFIX = ".ase"
 ENCAPSULATED_ROOTS = ("project-memory", "specs", "templates", "scripts")
@@ -291,6 +292,14 @@ def install(
     created_vscode = configure_vscode_excludes(root, installed, encapsulated, hide=hide_harness)
     if created_vscode or VSCODE_SETTINGS in installed:
         installed[VSCODE_SETTINGS] = digest(root / VSCODE_SETTINGS)
+
+    graphify_ignore = root / ".graphifyignore"
+    if not graphify_ignore.exists() or ".graphifyignore" in installed:
+        graphify_ignore.write_text(
+            ".ase/templates/\n.ase/scripts/\n.ase/specs/\n.agents/\n.github/\nhandover/\n.vscode/\ngraphify-out/\n",
+            encoding="utf-8",
+        )
+        installed[".graphifyignore"] = digest(graphify_ignore)
 
     installed[MANIFEST] = ""
     manifest_path.parent.mkdir(parents=True, exist_ok=True)

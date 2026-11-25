@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
-"""Deterministic Step 0 command dependency and prerequisite guard for ASE.
+"""Deterministic Step 0 prerequisite guard and post-command reactive chain evaluator for ASE.
 
-Checks whether the invoked /ase-* command's lifecycle prerequisites are satisfied.
-When a hard dependency is violated, exits with code 1 and prints the exact blocker
-and the prerequisite command the Human Owner must run first (ADR-004).
+Supports two modes (ADR-004, ADR-008):
+  1. Step 0 Prerequisite Check (`--command <cmd>`):
+     Verifies whether the invoked `/ase-*` command's lifecycle prerequisites are satisfied.
+     When a prerequisite is missing, instead of a dead-end failure, outputs `prerequisite_chain`
+     and `chain_approval_prompt` so the agent can ask the Human Owner for approval to run the
+     prerequisite command first and then automatically resume the requested command.
+  2. Post-Command Reactive Cascade Evaluation (`--post --command <cmd>`):
+     Inspects workspace state after `<cmd>` completes and returns `downstream_chain`,
+     `recommended_next_command`, `applicable_hag`, and `chain_approval_prompt` (including
+     token-aware Graphify `--update` gating under `HAG-04`).
 """
 
 from __future__ import annotations
@@ -20,6 +27,8 @@ COMMANDS = (
     "ase-setup",
     "ase-adopt",
     "ase-plan",
+    "ase-memo",
+    "ase-context",
     "ase-task",
     "ase-review",
     "ase-pack",
@@ -92,6 +101,8 @@ def read_next_task(memory_dir: Path) -> dict[str, str]:
         "status": "none",
         "queued": "none",
         "return_stack": "none",
+        "context_alerts": "none",
+        "pending_chain": "none",
     }
     nt_file = memory_dir / "state" / "NEXT_TASK.md"
     if not nt_file.is_file():
@@ -109,6 +120,12 @@ def read_next_task(memory_dir: Path) -> dict[str, str]:
     m_ret = re.search(r"\*\*Return Stack[^:]*:\*\*\s*([^\n]+)", text)
     if m_ret:
         info["return_stack"] = m_ret.group(1).strip().strip("`")
+    m_alert = re.search(r"\*\*Context Alerts:\*\*\s*([^\n]+)", text)
+    if m_alert:
+        info["context_alerts"] = m_alert.group(1).strip().strip("`")
+    m_chain = re.search(r"\*\*Pending Command Chain:\*\*\s*([^\n]+)", text)
+    if m_chain:
+        info["pending_chain"] = m_chain.group(1).strip().strip("`")
     return info
 
 
@@ -145,6 +162,43 @@ def compute_workspace_pack_digest(root: Path, memory_dir: Path) -> str:
             h.update(f"deliv:{rel}:{p.stat().st_size}\n".encode("utf-8"))
             h.update(hashlib.sha256(p.read_bytes()).digest())
     return h.hexdigest()
+
+
+def count_unprocessed_inputs(root: Path, memory_dir: Path) -> dict[str, int]:
+    inputs_dir = root / "inputs"
+    state_path = memory_dir / "state" / "INPUTS_STATE.json"
+    recorded: dict[str, Any] = {}
+    if state_path.is_file():
+        try:
+            recorded = json.loads(state_path.read_text(encoding="utf-8")).get("files", {})
+        except (OSError, json.JSONDecodeError):
+            recorded = {}
+
+    pending_docs = 0
+    pending_total = 0
+    if inputs_dir.is_dir():
+        for p in sorted(inputs_dir.rglob("*")):
+            if not p.is_file() or p.name in (".gitkeep", "README.md"):
+                continue
+            rel = p.relative_to(inputs_dir).as_posix()
+            sha = hashlib.sha256(p.read_bytes()).hexdigest()
+            if recorded.get(rel, {}).get("sha256") != sha:
+                pending_total += 1
+                if p.suffix.lower() in (".md", ".txt", ".pdf", ".png", ".jpg", ".jpeg", ".webp"):
+                    pending_docs += 1
+    return {"pending_total": pending_total, "pending_docs": pending_docs}
+
+
+def check_pending_context_hag(memory_dir: Path) -> str:
+    log_path = memory_dir / "state" / "CONTEXT_LOG.md"
+    if not log_path.is_file():
+        return ""
+    lines = [ln.strip() for ln in log_path.read_text(encoding="utf-8").splitlines() if ln.strip().startswith("|")]
+    if not lines:
+        return ""
+    last_row = lines[-1]
+    m = re.search(r"PENDING\s*:?\s*(HAG-0[1-7])", last_row, re.IGNORECASE)
+    return m.group(1).upper() if m else ""
 
 
 def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
@@ -198,13 +252,13 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
             )
             run_first.append("/ase-plan")
 
-    elif command == "ase-plan":
+    elif command in ("ase-plan", "ase-memo", "ase-context"):
         if not baseline_ready:
             blockers.append(
                 "Baseline setup (`M0` or `M0-A`) is not marked `PASS` in `state/PROJECT_STATE.md`."
             )
             run_first.extend(["/ase-adopt (existing/local repo)", "/ase-setup (new GitHub repo)"])
-        if next_task["status"] == "IN_REVIEW":
+        if command == "ase-plan" and next_task["status"] == "IN_REVIEW":
             warnings.append(
                 f"Task `{next_task['id']}` is currently `IN_REVIEW`. Accept its diff first (`HAG-01`) "
                 "or confirm pausing it (`PAUSED`) on the Return Stack before changing `NEXT_TASK.md`."
@@ -226,6 +280,11 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
                 f"Assigned task `{next_task['id']}` is `BLOCKED`. Resolve the blocker or re-plan first."
             )
             run_first.append("/ase-plan")
+        if next_task["context_alerts"] not in ("none", ""):
+            warnings.append(
+                f"Active Context Alert on `NEXT_TASK.md`: {next_task['context_alerts']}. "
+                "Confirm with the Human Owner whether to adjust the task via `/ase-plan` before coding."
+            )
 
     elif command == "ase-review":
         if not baseline_ready:
@@ -233,7 +292,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
                 "Baseline setup (`M0` or `M0-A`) is not marked `PASS` in `state/PROJECT_STATE.md`."
             )
             run_first.extend(["/ase-adopt", "/ase-setup"])
-        elif not done_tasks:
+        elif not done_tasks and next_task["status"] != "IN_REVIEW":
             blockers.append(
                 "No completed (`DONE`) tasks exist yet to review."
             )
@@ -255,7 +314,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
                 "Baseline setup (`M0` or `M0-A`) is not marked `PASS` in `state/PROJECT_STATE.md`."
             )
             run_first.extend(["/ase-adopt", "/ase-setup"])
-        elif not done_tasks:
+        elif not done_tasks and next_task["status"] != "IN_REVIEW":
             blockers.append(
                 "Cannot run `/ase-pack` before at least one task is `DONE`."
             )
@@ -329,8 +388,21 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
             )
 
     ok = len(blockers) == 0
+    canonical_cmd = "/ase-plan" if command in ("ase-memo", "ase-context") else f"/{command}"
+    prerequisite_chain: list[str] = []
+    chain_approval_prompt = ""
+    if not ok and run_first:
+        first_clean = run_first[0].split()[0]
+        prerequisite_chain = [*[c.split()[0] for c in run_first], f"/{command}"]
+        chain_approval_prompt = (
+            f"Upstream Prerequisite Chain detected (`{' -> '.join(prerequisite_chain)}`). "
+            f"Ask the Human Owner for approval to execute `{first_clean}` first and then automatically continue with `/{command}`."
+        )
+
     return {
         "command": f"/{command}",
+        "canonical_command": canonical_cmd,
+        "is_context_alias": command in ("ase-memo", "ase-context"),
         "ok": ok,
         "m0_pass": m0_pass,
         "m0a_pass": m0a_pass,
@@ -338,6 +410,146 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
         "blockers": blockers,
         "warnings": warnings,
         "run_first": run_first,
+        "prerequisite_chain": prerequisite_chain,
+        "chain_approval_prompt": chain_approval_prompt,
+    }
+
+
+def evaluate_post_command(root: Path, command: str) -> dict[str, Any]:
+    """Evaluate downstream cascade triggers after `command` completes (Category 1 Reactive Chaining)."""
+    root = root.resolve()
+    memory_dir = resolve_memory_dir(root)
+    m0_pass, m0a_pass = check_baseline_state(memory_dir)
+    baseline_ready = m0_pass or m0a_pass
+    next_task = read_next_task(memory_dir)
+    tasks = collect_task_states(memory_dir)
+
+    done_tasks = [t["id"] for t in tasks if t["status"] == "DONE"]
+    todo_tasks = [t["id"] for t in tasks if t["status"] == "TODO"]
+    paused_tasks = [t["id"] for t in tasks if t["status"] == "PAUSED"]
+    in_review_tasks = [t["id"] for t in tasks if t["status"] == "IN_REVIEW"]
+
+    pending_hag = check_pending_context_hag(memory_dir)
+    inputs_info = count_unprocessed_inputs(root, memory_dir)
+    graph_file = root / "graphify-out" / "graph.json"
+    graph_present = graph_file.is_file()
+    plugins_dir = root / "plugins"
+    has_plugins = plugins_dir.is_dir() and any(p.is_dir() for p in plugins_dir.iterdir())
+
+    recommended_next = ""
+    applicable_hag = ""
+    downstream_chain: list[str] = []
+    chain_reason = ""
+    graphify_advisory = ""
+
+    if graph_present and inputs_info["pending_docs"] > 0:
+        graphify_advisory = (
+            f"Graphify (`graphify-out/graph.json`) is present and {inputs_info['pending_docs']} new/modified document(s)/image(s) exist in `inputs/`. "
+            "Running `/graphify --update` on semantic files incurs LLM token usage (`HAG-04` cost gate)."
+        )
+
+    if command in ("ase-memo", "ase-context"):
+        if pending_hag:
+            recommended_next = "/ase-plan"
+            applicable_hag = pending_hag
+            downstream_chain = [f"/{command}", "/ase-plan"]
+            chain_reason = (
+                f"Context update logged a normative change requiring `{pending_hag}` approval and backlog/ADR reshaping via `/ase-plan`."
+            )
+        elif next_task["context_alerts"] not in ("none", ""):
+            recommended_next = "/ase-plan"
+            applicable_hag = "HAG-02"
+            downstream_chain = [f"/{command}", "/ase-plan"]
+            chain_reason = (
+                f"Context update raised an alert on open work (`{next_task['context_alerts']}`). Propose `/ase-plan` to adjust the task or insert a WBS `T-NNNN.1` step."
+            )
+        elif has_plugins:
+            recommended_next = "/ase-plugin"
+            applicable_hag = "HAG-02"
+            downstream_chain = [f"/{command}", "/ase-plugin"]
+            chain_reason = "Project conventions were updated and a domain plugin exists in `plugins/`; propose syncing via `/ase-plugin`."
+
+    elif command in ("ase-adopt", "ase-setup"):
+        if baseline_ready and not tasks:
+            recommended_next = "/ase-plan"
+            applicable_hag = "HAG-02"
+            downstream_chain = [f"/{command}", "/ase-plan"]
+            chain_reason = "Baseline onboarding is `PASS` and no backlog tasks exist yet; propose `/ase-plan` to create the initial Wave/Feature backlog."
+
+    elif command == "ase-plan":
+        if pending_hag:
+            recommended_next = "/ase-plan"
+            applicable_hag = pending_hag
+            downstream_chain = ["/ase-plan", "/ase-plan"]
+            chain_reason = f"Pending `{pending_hag}` normative change from context update requires approval before reshaping the backlog."
+        elif next_task["id"] not in ("none", "") and next_task["status"] == "TODO":
+            recommended_next = "/ase-task"
+            downstream_chain = ["/ase-plan", "/ase-task"]
+            chain_reason = f"Task `{next_task['id']}` (`TODO`) is assigned in `NEXT_TASK.md` and ready for execution via `/ase-task`."
+
+    elif command == "ase-task":
+        if in_review_tasks:
+            applicable_hag = "HAG-01"
+            if todo_tasks or paused_tasks or next_task["queued"] not in ("none", "") or next_task["return_stack"] not in ("none", ""):
+                recommended_next = "/ase-task"
+                downstream_chain = ["/ase-task (HAG-01 accept)", "/ase-task (next task)"]
+                chain_reason = (
+                    f"Once `{in_review_tasks[0]}` is accepted under `HAG-01` (`DONE`), advance `NEXT_TASK.md` and run `/ase-task` on the next queued/remaining task."
+                )
+            else:
+                recommended_next = "/ase-review"
+                downstream_chain = ["/ase-task (HAG-01 accept)", "/ase-review"]
+                chain_reason = (
+                    f"Once `{in_review_tasks[0]}` is accepted under `HAG-01` (`DONE`), all planned tasks in the Work Package will be complete; propose `/ase-review`."
+                )
+        elif done_tasks and not todo_tasks and not paused_tasks:
+            recommended_next = "/ase-review"
+            downstream_chain = ["/ase-task", "/ase-review"]
+            chain_reason = "All planned tasks are `DONE`; propose `/ase-review` to run the Work Package quality gate."
+        elif todo_tasks or paused_tasks:
+            recommended_next = "/ase-task"
+            downstream_chain = ["/ase-task", "/ase-task"]
+            chain_reason = "Remaining `TODO` or `PAUSED` tasks exist; propose continuing with `/ase-task`."
+
+    elif command == "ase-review":
+        if done_tasks and not in_review_tasks and not todo_tasks and not paused_tasks:
+            recommended_next = "/ase-pack"
+            downstream_chain = ["/ase-review", "/ase-pack"]
+            chain_reason = "Work Package review is complete; propose `/ase-pack` to curate `deliverables/` and generate `deliverables/INDEX.md`."
+
+    elif command == "ase-pack":
+        pack_state_file = memory_dir / "state" / "PACK_STATE.json"
+        if pack_state_file.is_file():
+            recommended_next = "/ase-export"
+            downstream_chain = ["/ase-pack", "/ase-export"]
+            chain_reason = "Workspace and `deliverables/` are freshly packed; offer optional `/ase-export` if the Human Owner needs a standalone `.zip` handover bundle."
+
+    elif command == "ase-switch":
+        if inputs_info["pending_total"] > 0:
+            recommended_next = "/ase-memo"
+            downstream_chain = ["/ase-switch", "/ase-memo"]
+            chain_reason = f"Release switch succeeded and {inputs_info['pending_total']} new file(s) exist in `inputs/`; propose `/ase-memo` to ingest them."
+        elif next_task["id"] not in ("none", "") and next_task["status"] in ("TODO", "IN_PROGRESS"):
+            recommended_next = "/ase-task"
+            downstream_chain = ["/ase-switch", "/ase-task"]
+            chain_reason = f"Release switch succeeded; propose resuming active task `{next_task['id']}` via `/ase-task`."
+
+    chain_approval_prompt = ""
+    if recommended_next:
+        hag_prefix = f" under `{applicable_hag}`" if applicable_hag else ""
+        chain_approval_prompt = (
+            f"{chain_reason} Ask the Human Owner for approval{hag_prefix} before executing `{recommended_next}`."
+        )
+
+    return {
+        "completed_command": f"/{command}",
+        "recommended_next_command": recommended_next,
+        "applicable_hag": applicable_hag,
+        "downstream_chain": downstream_chain,
+        "chain_reason": chain_reason,
+        "chain_approval_prompt": chain_approval_prompt,
+        "graphify_advisory": graphify_advisory,
+        "next_task": next_task,
     }
 
 
@@ -351,9 +563,28 @@ def format_report(res: dict[str, Any]) -> str:
     lines = [f"BLOCKED: prerequisites not met for `{res['command']}`."]
     for b in res["blockers"]:
         lines.append(f"  - {b}")
-    if res["run_first"]:
+    if res.get("prerequisite_chain"):
+        cmds = " -> ".join(f"`{c}`" for c in res["prerequisite_chain"])
+        lines.append(f"Reactive Prerequisite Chain: {cmds}")
+        lines.append(f"Action: {res['chain_approval_prompt']}")
+    elif res["run_first"]:
         cmds = " -> ".join(f"`{c}`" for c in res["run_first"])
         lines.append(f"Required action first: run {cmds} before `{res['command']}`.")
+    return "\n".join(lines)
+
+
+def format_post_report(res: dict[str, Any]) -> str:
+    lines = [f"POST-CHECK: completed `{res['completed_command']}`."]
+    if res["recommended_next_command"]:
+        chain_str = " -> ".join(f"`{c}`" for c in res["downstream_chain"])
+        lines.append(f"Recommended Reactive Chain: {chain_str}")
+        if res["applicable_hag"]:
+            lines.append(f"Applicable Approval Gate: `{res['applicable_hag']}`")
+        lines.append(f"Action: {res['chain_approval_prompt']}")
+    else:
+        lines.append("No automatic downstream command trigger detected.")
+    if res["graphify_advisory"]:
+        lines.append(f"GRAPHIFY ADVISORY: {res['graphify_advisory']}")
     return "\n".join(lines)
 
 
@@ -363,7 +594,12 @@ def main() -> int:
         "--command",
         required=True,
         choices=COMMANDS,
-        help="ASE command slug to check (e.g. ase-plan, ase-task, ase-pack, ase-export).",
+        help="ASE command slug to check (e.g. ase-plan, ase-memo, ase-context, ase-task, ase-pack, ase-export).",
+    )
+    parser.add_argument(
+        "--post",
+        action="store_true",
+        help="Evaluate post-command downstream reactive chaining instead of Step 0 prerequisites.",
     )
     parser.add_argument(
         "--root",
@@ -377,6 +613,14 @@ def main() -> int:
         help="Output machine-readable JSON.",
     )
     args = parser.parse_args()
+
+    if args.post:
+        res = evaluate_post_command(args.root, args.command)
+        if args.json:
+            print(json.dumps(res, indent=2))
+        else:
+            print(format_post_report(res))
+        return 0
 
     res = evaluate_prerequisites(args.root, args.command)
     if args.json:

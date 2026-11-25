@@ -177,6 +177,8 @@ def parse_next_task(memory_dir: Path) -> dict[str, str]:
         "current_status": "none",
         "queued_sequence": "none",
         "return_stack": "none",
+        "context_alerts": "none",
+        "pending_chain": "none",
     }
     if not path.is_file():
         return info
@@ -193,7 +195,65 @@ def parse_next_task(memory_dir: Path) -> dict[str, str]:
     m_ret = re.search(r"\*\*Return Stack[^:]*:\*\*\s*([^\n]+)", text)
     if m_ret:
         info["return_stack"] = m_ret.group(1).strip().strip("`")
+    m_alert = re.search(r"\*\*Context Alerts:\*\*\s*([^\n]+)", text)
+    if m_alert:
+        info["context_alerts"] = m_alert.group(1).strip().strip("`")
+    m_chain = re.search(r"\*\*Pending Command Chain:\*\*\s*([^\n]+)", text)
+    if m_chain:
+        info["pending_chain"] = m_chain.group(1).strip().strip("`")
     return info
+
+
+def parse_context_log(memory_dir: Path) -> list[dict[str, str]]:
+    log_path = memory_dir / "state" / "CONTEXT_LOG.md"
+    entries: list[dict[str, str]] = []
+    if not log_path.is_file():
+        return entries
+    for line in log_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        parts = [c.strip() for c in line.split("|")[1:-1]]
+        if len(parts) >= 5 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", parts[0]):
+            entries.append(
+                {
+                    "date": parts[0],
+                    "source": parts[1],
+                    "summary": parts[2],
+                    "updated": parts[3],
+                    "hag_status": parts[4],
+                }
+            )
+    return entries
+
+
+def inspect_graphify_summary(root: Path) -> dict[str, Any]:
+    graph_path = root / "graphify-out" / "graph.json"
+    cost_path = root / "graphify-out" / "cost.json"
+    if not graph_path.is_file():
+        return {"enabled": False}
+    try:
+        gdata = json.loads(graph_path.read_text(encoding="utf-8"))
+        nodes = len(gdata.get("nodes", []))
+        edges = len(gdata.get("links") or gdata.get("edges") or [])
+    except (OSError, json.JSONDecodeError):
+        return {"enabled": False}
+    in_tok = 0
+    out_tok = 0
+    if cost_path.is_file():
+        try:
+            cdata = json.loads(cost_path.read_text(encoding="utf-8"))
+            in_tok = int(cdata.get("total_input_tokens", 0))
+            out_tok = int(cdata.get("total_output_tokens", 0))
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {
+        "enabled": True,
+        "nodes": nodes,
+        "edges": edges,
+        "total_input_tokens": in_tok,
+        "total_output_tokens": out_tok,
+    }
 
 
 def collect_known_issues(memory_dir: Path) -> list[str]:
@@ -217,8 +277,10 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
     tasks = collect_tasks(memory_dir)
     waves, features = collect_waves_and_features(memory_dir)
     log_entries = parse_task_log(memory_dir)
+    context_entries = parse_context_log(memory_dir)
     next_task = parse_next_task(memory_dir)
     known_issues = collect_known_issues(memory_dir)
+    graphify_info = inspect_graphify_summary(root)
 
     counts: dict[str, int] = {
         "DONE": 0,
@@ -290,6 +352,15 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
         insights.append(f"Open high-risk task(s) requiring extra verification controls: {ids}.")
     if known_issues:
         insights.append(f"Known issues recorded ({len(known_issues)}): {known_issues[0]}")
+    if next_task.get("context_alerts", "none") not in ("none", ""):
+        insights.append(f"Active Context Alert on `NEXT_TASK.md`: {next_task['context_alerts']}")
+    if next_task.get("pending_chain", "none") not in ("none", ""):
+        insights.append(f"Pending Command Chain awaiting approval: {next_task['pending_chain']}")
+    if graphify_info.get("enabled"):
+        insights.append(
+            f"Graphify Knowledge Graph active: {graphify_info['nodes']} nodes, {graphify_info['edges']} edges "
+            f"(cumulative tokens: {graphify_info['total_input_tokens']} in / {graphify_info['total_output_tokens']} out)."
+        )
     if not insights:
         insights.append(
             "Execution is on track with zero blocked tasks, zero verification friction cycles, and no unplanned drift."
@@ -386,6 +457,8 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
         "wbs_inserted_tasks": [t["id"] for t in wbs_inserted_tasks],
         "next_task": next_task,
         "daily_entries": daily_entries,
+        "context_entries": context_entries[-5:],
+        "graphify": graphify_info,
         "dirty_files": dirty_files,
         "insights": insights,
         "next_steps": next_steps_paragraph,
@@ -432,6 +505,8 @@ def format_markdown(report: dict[str, Any]) -> str:
             f"- **Active Task:** `{nt['current_id']}` (`{nt['current_status']}`)",
             f"- **Queued Next in Inner Sequence:** `{nt['queued_sequence']}`",
             f"- **Return Stack (`PAUSED` tasks to resume):** `{nt['return_stack']}`",
+            f"- **Context Alerts:** `{nt.get('context_alerts', 'none')}`",
+            f"- **Pending Command Chain:** `{nt.get('pending_chain', 'none')}`",
             "",
             "## 3. Daily / Recent Activity Delta",
             "",

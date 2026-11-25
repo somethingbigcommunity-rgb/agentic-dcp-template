@@ -217,19 +217,28 @@ def merge_agents_md_row_by_row(current_text: str, new_template_text: str) -> tup
 
 
 def patch_next_task_md_in_place(next_task_path: Path) -> bool:
-    """Keep active task rows untouched in place; append Return Stack block only if missing."""
+    """Keep active task rows untouched in place; append Return Stack and Context/Chain blocks only if missing."""
     if not next_task_path.is_file():
         return False
     text = next_task_path.read_text(encoding="utf-8")
-    if "Inner Sequence Queue & Return Stack" in text:
-        return False
-    addition = (
-        "\n## Inner Sequence Queue & Return Stack\n\n"
-        "- **Queued next in inner sequence:** `none`\n"
-        "- **Return Stack (PAUSED tasks to resume):** `none`\n"
-    )
-    next_task_path.write_text(text.rstrip("\n") + "\n" + addition, encoding="utf-8")
-    return True
+    changed = False
+    if "Inner Sequence Queue & Return Stack" not in text:
+        text = text.rstrip("\n") + (
+            "\n\n## Inner Sequence Queue & Return Stack\n\n"
+            "- **Queued next in inner sequence:** `none`\n"
+            "- **Return Stack (PAUSED tasks to resume):** `none`\n"
+        )
+        changed = True
+    if "Context Alerts & Pending Command Chain" not in text:
+        text = text.rstrip("\n") + (
+            "\n\n## Context Alerts & Pending Command Chain\n\n"
+            "- **Context Alerts:** `none`\n"
+            "- **Pending Command Chain:** `none`\n"
+        )
+        changed = True
+    if changed:
+        next_task_path.write_text(text, encoding="utf-8")
+    return changed
 
 
 def synthesize_project_charter_if_needed(
