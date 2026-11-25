@@ -50,6 +50,7 @@ INCLUDE = [
     "scripts/check-prereq.py",
     "scripts/pack-workspace.py",
     "scripts/export-handover.py",
+    "scripts/switch-release.py",
 ]
 ENCAPSULATED_PREFIX = ".ase"
 ENCAPSULATED_ROOTS = ("project-memory", "specs", "templates", "scripts")
@@ -202,7 +203,8 @@ def verify_layout(root: Path) -> int:
         if (cand.parent / "project-memory").is_dir() and (cand.parent / ".agents").is_dir():
             errors.append(
                 f"stray template clone detected at '{cand.parent.relative_to(root)}'; "
-                f"move it to '.ase/template/' or outside the project workspace so it does not pollute the repository"
+                f"run 'python3 {cand.relative_to(root)} . --switch' (or /ase-switch) to switch to the new release and auto-remove the clone, "
+                f"or move it to '.ase/template/' or outside the project workspace so it does not pollute the repository"
             )
 
     if errors:
@@ -344,6 +346,9 @@ def main() -> int:
     parser.add_argument("--flat", action="store_true", help="install project-memory, specs, scripts, templates at root instead of .ase/")
     parser.add_argument("--no-git", action="store_true", help="allow installing into a directory that is not yet a Git repo")
     parser.add_argument("--upgrade", action="store_true", help="upgrade unmodified ASE files to the latest template version")
+    parser.add_argument("--switch", action="store_true", help="run CDC & row-by-row in-flight release switch and delete cloned source folder")
+    parser.add_argument("--from-release", type=Path, default=None, help="explicit path to new release folder for --switch")
+    parser.add_argument("--keep-source", action="store_true", help="keep the cloned release folder after --switch")
     parser.add_argument("--verify-layout", action="store_true", help="verify .ase/ encapsulation and check for stray template clones")
     parser.add_argument("--show-harness", action="store_true", help="unhide internal ASE folders in .vscode/settings.json")
     parser.add_argument("--hide-harness", action="store_true", help="hide internal ASE folders in .vscode/settings.json (default)")
@@ -355,6 +360,24 @@ def main() -> int:
         sys.exit("error: target is the ASE template itself")
     if args.verify_layout:
         return verify_layout(root)
+    if args.switch:
+        import importlib.util
+        switch_script = SOURCE / "scripts" / "switch-release.py"
+        spec = importlib.util.spec_from_file_location("switch_release", switch_script)
+        if spec is None or spec.loader is None:
+            sys.exit("error: could not load scripts/switch-release.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        src_arg = args.from_release or (SOURCE if SOURCE != root and root in SOURCE.parents else None)
+        try:
+            res = mod.switch_release(root, explicit_source=src_arg, keep_source=args.keep_source)
+            print(
+                f"PASS: Switched ASE release {res['old_version']} -> {res['new_version']} "
+                f"(unchanged: {res['unchanged_count']}, patched: {res['patched_count']}, created: {res['created_count']})."
+            )
+            return 0
+        except Exception as exc:
+            sys.exit(f"error: {exc}")
     if args.show_harness or args.hide_harness:
         manifest_path = root / MANIFEST
         prev = json.loads(manifest_path.read_text()) if manifest_path.exists() else {"files": {}, "encapsulated": True}

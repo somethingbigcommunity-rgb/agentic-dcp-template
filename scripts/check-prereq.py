@@ -26,7 +26,21 @@ COMMANDS = (
     "ase-export",
     "ase-status",
     "ase-plugin",
+    "ase-switch",
 )
+
+
+def detect_pending_release_clone(root: Path) -> Path | None:
+    for install_py in sorted(root.rglob("install.py")):
+        cand = install_py.parent.resolve()
+        if cand == root:
+            continue
+        rel = cand.relative_to(root).as_posix()
+        if rel in (".ase/template", "implementazione/dcp-template"):
+            continue
+        if (cand / "AGENTS.md").is_file() and (cand / ".agents" / "skills").is_dir() and (cand / "project-memory").is_dir():
+            return cand
+    return None
 
 
 def resolve_memory_dir(root: Path) -> Path:
@@ -152,6 +166,21 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
     blockers: list[str] = []
     warnings: list[str] = []
     run_first: list[str] = []
+
+    pending_clone = detect_pending_release_clone(root)
+    if command == "ase-switch":
+        if pending_clone is None:
+            blockers.append(
+                "No cloned ASE release directory was found in the workspace root. "
+                "Clone the new release into the workspace root first (e.g. `git clone .../agentic-dcp-template`)."
+            )
+    elif pending_clone is not None:
+        rel_clone = pending_clone.relative_to(root).as_posix()
+        blockers.append(
+            f"Detected a cloned ASE release at `./{rel_clone}/`. "
+            f"Run `/ase-switch` (or `python3 {rel_clone}/install.py . --switch`) first to complete the in-place release switch and auto-remove the clone."
+        )
+        run_first.append("/ase-switch")
 
     if command == "ase-setup":
         if m0a_pass:
