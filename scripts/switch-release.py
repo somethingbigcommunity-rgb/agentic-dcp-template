@@ -572,6 +572,22 @@ def switch_release(
                 exclude_entries.append("/.ase/")
             new_inst.write_exclude(root, exclude_entries)
 
+        # Cascade CDC switch to any member child ASE projects inside an Umbrella Father root
+        upgraded_children: list[str] = []
+        for child_dir in sorted(root.iterdir()):
+            if not child_dir.is_dir() or child_dir.name.startswith(".") or child_dir.resolve() == cloned_source:
+                continue
+            if child_dir.name in ("implementazione", "paradigma", "deliverables", "handover", "inputs", "plugins", "graphify-out"):
+                continue
+            has_child_ase = (
+                (child_dir / ".ase" / "project-memory" / "state" / "PROJECT_STATE.md").is_file()
+                or (child_dir / "project-memory" / "state" / "PROJECT_STATE.md").is_file()
+                or (child_dir / ".agents" / ".ase-install.json").is_file()
+            )
+            if has_child_ase:
+                switch_release(child_dir, explicit_source=cloned_source, keep_source=True)
+                upgraded_children.append(child_dir.name)
+
         # Self-delete the cloned release directory if it sits inside root
         deleted_clone_dir: str | None = None
         if not keep_source and cloned_source != root and root in cloned_source.parents:
@@ -620,6 +636,7 @@ def switch_release(
         "kept_project_data_count": len(kept_project_data_files),
         "relocated_paths": relocated_paths,
         "purged_files": purged_files,
+        "upgraded_children": upgraded_children,
         "deleted_clone_dir": deleted_clone_dir,
         "driver_advisories": driver_advisories,
     }

@@ -36,6 +36,7 @@ COMMANDS = (
     "ase-status",
     "ase-plugin",
     "ase-switch",
+    "ase-upgrade",
 )
 
 
@@ -222,7 +223,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
     run_first: list[str] = []
 
     pending_clone = detect_pending_release_clone(root)
-    if command == "ase-switch":
+    if command in ("ase-switch", "ase-upgrade"):
         if pending_clone is None:
             blockers.append(
                 "No cloned ASE release directory was found in the workspace root. "
@@ -232,7 +233,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
         rel_clone = pending_clone.relative_to(root).as_posix()
         blockers.append(
             f"Detected a cloned ASE release at `./{rel_clone}/`. "
-            f"Run `/ase-switch` (or `python3 {rel_clone}/install.py . --switch`) first to complete the in-place release switch and auto-remove the clone."
+            f"Run `/ase-switch` / `/ase-upgrade` (or `python3 {rel_clone}/install.py . --switch`) first to complete the in-place release switch and auto-remove the clone."
         )
         run_first.append("/ase-switch")
 
@@ -388,7 +389,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
             )
 
     ok = len(blockers) == 0
-    canonical_cmd = "/ase-plan" if command in ("ase-memo", "ase-context") else f"/{command}"
+    canonical_cmd = "/ase-memo" if command == "ase-context" else f"/{command}"
     prerequisite_chain: list[str] = []
     chain_approval_prompt = ""
     if not ok and run_first:
@@ -399,6 +400,28 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
             f"Ask the Human Owner for approval to execute `{first_clean}` first and then automatically continue with `/{command}`."
         )
 
+    # Inspect federated topology & HANDOFF.json (ADR-009)
+    handoff_file = memory_dir / "state" / "HANDOFF.json"
+    pending_handoff: dict[str, Any] | None = None
+    if handoff_file.is_file():
+        try:
+            hdata = json.loads(handoff_file.read_text(encoding="utf-8"))
+            for h in hdata.get("handoffs", []):
+                if h.get("status") == "PENDING":
+                    pending_handoff = {
+                        "handoff_id": h.get("handoff_id"),
+                        "handoff_type": h.get("handoff_type"),
+                        "recommended_command": h.get("governance", {}).get("recommended_command", "/ase-plan"),
+                        "objective": h.get("dispatch_payload", {}).get("objective", ""),
+                    }
+                    warnings.append(
+                        f"Pending Parent Orchestrator Handoff `{pending_handoff['handoff_id']}` ({pending_handoff['handoff_type']}): "
+                        f"{pending_handoff['objective']} -> recommended command `{pending_handoff['recommended_command']}`."
+                    )
+                    break
+        except (OSError, json.JSONDecodeError):
+            pass
+
     return {
         "command": f"/{command}",
         "canonical_command": canonical_cmd,
@@ -407,6 +430,7 @@ def evaluate_prerequisites(root: Path, command: str) -> dict[str, Any]:
         "m0_pass": m0_pass,
         "m0a_pass": m0a_pass,
         "next_task": next_task,
+        "pending_handoff": pending_handoff,
         "blockers": blockers,
         "warnings": warnings,
         "run_first": run_first,
@@ -524,14 +548,14 @@ def evaluate_post_command(root: Path, command: str) -> dict[str, Any]:
             downstream_chain = ["/ase-pack", "/ase-export"]
             chain_reason = "Workspace and `deliverables/` are freshly packed; offer optional `/ase-export` if the Human Owner needs a standalone `.zip` handover bundle."
 
-    elif command == "ase-switch":
+    elif command in ("ase-switch", "ase-upgrade"):
         if inputs_info["pending_total"] > 0:
             recommended_next = "/ase-memo"
-            downstream_chain = ["/ase-switch", "/ase-memo"]
+            downstream_chain = [f"/{command}", "/ase-memo"]
             chain_reason = f"Release switch succeeded and {inputs_info['pending_total']} new file(s) exist in `inputs/`; propose `/ase-memo` to ingest them."
         elif next_task["id"] not in ("none", "") and next_task["status"] in ("TODO", "IN_PROGRESS"):
             recommended_next = "/ase-task"
-            downstream_chain = ["/ase-switch", "/ase-task"]
+            downstream_chain = [f"/{command}", "/ase-task"]
             chain_reason = f"Release switch succeeded; propose resuming active task `{next_task['id']}` via `/ase-task`."
 
     chain_approval_prompt = ""

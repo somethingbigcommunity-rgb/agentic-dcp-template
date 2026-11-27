@@ -52,6 +52,7 @@ INCLUDE = [
     "scripts/export-handover.py",
     "scripts/switch-release.py",
     "scripts/sync-inputs.py",
+    "scripts/ase-topology.py",
 ]
 ENCAPSULATED_PREFIX = ".ase"
 ENCAPSULATED_ROOTS = ("project-memory", "specs", "templates", "scripts")
@@ -158,6 +159,8 @@ def git_root(target: Path, allow_no_git: bool = False) -> tuple[Path, bool]:
         sys.exit(f"error: {target} is not inside a Git repository (pass --no-git to install anyway)")
     root = Path(out).resolve()
     if root != target.resolve():
+        if allow_no_git:
+            return target.resolve(), False
         sys.exit(f"error: run against the repository root: {root}")
     return root, True
 

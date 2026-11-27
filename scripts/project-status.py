@@ -268,6 +268,36 @@ def collect_known_issues(memory_dir: Path) -> list[str]:
     return issues
 
 
+def inspect_federation_summary(root: Path, memory_dir: Path) -> dict[str, Any]:
+    fed_path = memory_dir / "state" / "FEDERATION_STATE.json"
+    ho_path = memory_dir / "state" / "HANDOFF.json"
+    if fed_path.is_file():
+        try:
+            fdata = json.loads(fed_path.read_text(encoding="utf-8"))
+            return {
+                "role": "orchestrator",
+                "member_children": fdata.get("member_children", []),
+                "unmanaged_children": fdata.get("unmanaged_children", []),
+                "handoffs": fdata.get("handoffs", []),
+                "escalations": fdata.get("escalations", []),
+                "contract_drift_alerts": fdata.get("contract_drift_alerts", []),
+            }
+        except (OSError, json.JSONDecodeError):
+            pass
+    if ho_path.is_file():
+        try:
+            hdata = json.loads(ho_path.read_text(encoding="utf-8"))
+            return {
+                "role": "member",
+                "parent_root": hdata.get("parent_root"),
+                "active_handoff_id": hdata.get("active_handoff_id"),
+                "handoffs": hdata.get("handoffs", []),
+            }
+        except (OSError, json.JSONDecodeError):
+            pass
+    return {"role": "standalone"}
+
+
 def build_status_report(root: Path, target_date: str | None = None) -> dict[str, Any]:
     root = root.resolve()
     memory_dir = resolve_memory_dir(root)
@@ -281,6 +311,7 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
     next_task = parse_next_task(memory_dir)
     known_issues = collect_known_issues(memory_dir)
     graphify_info = inspect_graphify_summary(root)
+    federation_info = inspect_federation_summary(root, memory_dir)
 
     counts: dict[str, int] = {
         "DONE": 0,
@@ -360,6 +391,17 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
         insights.append(
             f"Graphify Knowledge Graph active: {graphify_info['nodes']} nodes, {graphify_info['edges']} edges "
             f"(cumulative tokens: {graphify_info['total_input_tokens']} in / {graphify_info['total_output_tokens']} out)."
+        )
+    if federation_info.get("role") == "orchestrator":
+        m_cnt = len(federation_info.get("member_children", []))
+        u_cnt = len(federation_info.get("unmanaged_children", []))
+        esc = federation_info.get("escalations", [])
+        insights.append(
+            f"Federated Umbrella Orchestrator active: {m_cnt} member child project(s), {u_cnt} unmanaged child folder(s), {len(esc)} escalation(s)."
+        )
+    elif federation_info.get("role") == "member" and federation_info.get("active_handoff_id"):
+        insights.append(
+            f"Federated Child Member active handoff from Parent: `{federation_info['active_handoff_id']}`."
         )
     if not insights:
         insights.append(
@@ -459,6 +501,7 @@ def build_status_report(root: Path, target_date: str | None = None) -> dict[str,
         "daily_entries": daily_entries,
         "context_entries": context_entries[-5:],
         "graphify": graphify_info,
+        "federation": federation_info,
         "dirty_files": dirty_files,
         "insights": insights,
         "next_steps": next_steps_paragraph,

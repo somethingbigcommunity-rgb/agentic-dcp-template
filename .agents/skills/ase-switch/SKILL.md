@@ -1,9 +1,9 @@
 ---
 name: ase-switch
-description: Switch an ongoing project from an older ASE release to a newly cloned ASE release in the workspace root using Change-Data-Capture (CDC) and row-by-row diff-patching (scripts/switch-release.py / install.py --switch), keeping unchanged files/rows untouched, relocating moved paths, and deleting all traces of the old release and cloned folder. Use when asked to run /ase-switch or upgrade ASE mid-project.
+description: Switch or upgrade an ongoing project from an older ASE release to a newly cloned ASE release in the workspace root using Change-Data-Capture (CDC) and row-by-row diff-patching (scripts/switch-release.py / install.py --switch / --upgrade), keeping unchanged files/rows untouched, relocating moved paths, and deleting all traces of the old release and cloned folder. Use when asked to run /ase-switch, /ase-upgrade, or upgrade ASE mid-project.
 ---
 
-# `/ase-switch`
+# `/ase-switch` (and Interchangeable Alias `/ase-upgrade`)
 
 > If the repository's root `AGENTS.md` belongs to the team and is not the ASE rules file, the installer placed the ASE rules in `.agents/AGENTS.md`; every reference to `AGENTS.md` in this skill means that file. Always use first-person singular (`"I"`, addressing the Human Owner as `"you"`, never `"we"`).
 
